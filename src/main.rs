@@ -18,11 +18,13 @@ use rustfft::num_complex::Complex;
 use rustfft::num_traits::identities::Zero;
 
 mod errors;
+mod samples;
 
 use errors::*;
+use samples::Samples;
 
 #[derive(Debug, PartialEq, Eq)]
-enum FileFormat {
+pub enum FileFormat {
     /// GNU-Radio
     ComplexFloat32,
 
@@ -54,18 +56,15 @@ fn run() -> Result<()> {
         other => bail!("unrecognised from: {:?}", other),
     };
 
-    let mut file = fs::File::open(path)?;
+    let mut file = samples::SampleFile::new(fs::File::open(path)?, format);
 
     const FFT_WIDTH: usize = 256;
 
     let fft = Radix4::new(FFT_WIDTH, false);
 
-    loop {
-        let mut buf = vec![0u8; FFT_WIDTH * 2 * format.type_bytes()];
-        file.read_exact(&mut buf)?;
-        let mut inp: Vec<Complex<f32>> = buf.chunks(2 * format.type_bytes())
-            .map(|two_vals| format.to_cf32(two_vals))
-            .collect();
+    for i in 0..(file.len() - FFT_WIDTH as u64) {
+        let mut inp = vec![Complex::zero(); FFT_WIDTH];
+        file.read_exact_at(i, &mut inp)?;
 
         let mut out = vec![Complex::zero(); FFT_WIDTH];
 
@@ -77,7 +76,10 @@ fn run() -> Result<()> {
         let distinction = 1.0 / (graph.len() as f32);
 
         let mut buf = String::with_capacity(FFT_WIDTH);
-        for val in out.iter().skip(FFT_WIDTH / 2).chain(out.iter().take(FFT_WIDTH / 2)) {
+        for val in out.iter().skip(FFT_WIDTH / 2).chain(
+            out.iter().take(FFT_WIDTH / 2),
+        )
+        {
             let norm = val.norm();
             if norm > 1.0 {
                 buf.push(graph[graph.len() - 1]);
@@ -93,7 +95,7 @@ fn run() -> Result<()> {
 }
 
 impl FileFormat {
-    fn type_bytes(&self) -> usize {
+    fn type_bytes(&self) -> u64 {
         use FileFormat::*;
         match *self {
             ComplexFloat32 => 4,
@@ -103,11 +105,17 @@ impl FileFormat {
         }
     }
 
+    fn pair_bytes(&self) -> u64 {
+        self.type_bytes() * 2
+    }
+
     fn to_cf32(&self, buf: &[u8]) -> Complex<f32> {
-        assert_eq!(self.type_bytes() * 2, buf.len());
+        assert_eq!(self.pair_bytes(), buf.len() as u64);
         Complex::new(
-            self.to_f32(&buf[0..self.type_bytes()]),
-            self.to_f32(&buf[self.type_bytes()..self.type_bytes() * 2]),
+            self.to_f32(&buf[0..self.type_bytes() as usize]),
+            self.to_f32(
+                &buf[self.type_bytes() as usize..2 * self.type_bytes() as usize],
+            ),
         )
     }
 
@@ -115,7 +123,7 @@ impl FileFormat {
         use FileFormat::*;
         use byteorder::LittleEndian;
 
-        assert_eq!(self.type_bytes(), buf.len());
+        assert_eq!(self.type_bytes(), buf.len() as u64);
 
         match *self {
             ComplexFloat32 => LittleEndian::read_f32(buf),
@@ -173,4 +181,9 @@ fn guess_from_extension(ext: &ffi::OsStr) -> Result<FileFormat> {
             )
         }
     })
+}
+
+fn usize_from(val: u64) -> usize {
+    assert!(val <= std::usize::MAX as u64);
+    val as usize
 }
