@@ -18,6 +18,7 @@ use rustfft::num_complex::Complex;
 use rustfft::num_traits::identities::Zero;
 
 mod errors;
+mod filter;
 mod samples;
 
 use errors::*;
@@ -57,12 +58,15 @@ fn run() -> Result<()> {
     };
 
     let mut file = samples::SampleFile::new(fs::File::open(path)?, format);
+    let mut file = filter::LowPass::new(file);
 
-    const FFT_WIDTH: usize = 256;
+    const FFT_WIDTH: usize = 64;
 
     let fft = Radix4::new(FFT_WIDTH, false);
 
-    for i in 0..(file.len() - FFT_WIDTH as u64) {
+    let mut i = 0;
+    while i < (file.len() - FFT_WIDTH as u64) {
+
         let mut inp = vec![Complex::zero(); FFT_WIDTH];
         file.read_exact_at(i, &mut inp)?;
 
@@ -89,6 +93,8 @@ fn run() -> Result<()> {
         }
 
         println!("{}", buf);
+
+        i += FFT_WIDTH as u64;
     }
 
     Ok(())

@@ -9,12 +9,16 @@ use usize_from;
 
 pub trait Samples {
     fn len(&self) -> u64;
-    fn read_at(&mut self, off: u64, buf: &mut [Complex<f32>]) -> u64;
+    fn read_at(&mut self, off: u64, buf: &mut [Complex<f32>]) -> usize;
 
     fn read_exact_at(&mut self, off: u64, buf: &mut [Complex<f32>]) -> Result<()> {
+        let wanted = buf.len();
+        let got = self.read_at(off, buf);
         ensure!(
-            buf.len() as u64 == self.read_at(off, buf),
-            "TODO: read-exact messed up"
+            wanted == got,
+            "TODO: read-exact messed up: {} (wanted) != {} (read)",
+            wanted,
+            got
         );
         Ok(())
     }
@@ -48,7 +52,7 @@ where
         self.file_len / self.format.pair_bytes()
     }
 
-    fn read_at(&mut self, off: u64, into: &mut [Complex<f32>]) -> u64 {
+    fn read_at(&mut self, off: u64, into: &mut [Complex<f32>]) -> usize {
         assert!(off < self.len());
         self.inner
             .seek(SeekFrom::Start(off * self.format.pair_bytes()))
@@ -67,6 +71,6 @@ where
             into[i] = self.format.to_cf32(sample);
         }
 
-        (bytes as u64) / self.format.pair_bytes()
+        (bytes) / usize_from(self.format.pair_bytes())
     }
 }
