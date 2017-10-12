@@ -119,12 +119,16 @@ pub fn parse<'a, I: Iterator<Item = &'a String>>(args: I) -> Result<Vec<Command>
             }
             "sparkfft" => {
                 let mut map = into_map(cmd.as_str(), &opts)?;
-                let width = map.remove("width")
-                    .unwrap_or_else(|| "128".to_string())
-                    .parse()?;
-                let stride = map.remove("stride")
-                    .unwrap_or_else(|| "1".to_string())
-                    .parse()?;
+                let width = match map.remove("width") {
+                    Some(val) => val.parse()?,
+                    None => 128u32,
+                };
+
+                let stride = match map.remove("stride") {
+                    Some(val) => val.parse()?,
+                    None => width as u64,
+                };
+
                 ensure!(
                     map.is_empty(),
                     "invalid flags for 'sparkfft': {:?}",

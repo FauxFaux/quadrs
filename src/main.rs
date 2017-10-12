@@ -151,7 +151,7 @@ fn spark_fft(samples: &mut Samples, fft_width: u32, stride: u64) -> Result<()> {
 
         println!("{}", buf);
 
-        i += fft_width as u64;
+        i += stride;
     }
 
     Ok(())
