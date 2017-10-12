@@ -24,6 +24,16 @@ pub trait Samples {
     }
 }
 
+impl<T: Samples + ?Sized> Samples for Box<T> {
+    fn len(&self) -> u64 {
+        (**self).len()
+    }
+
+    fn read_at(&mut self, off: u64, buf: &mut [Complex<f32>]) -> usize {
+        (**self).read_at(off, buf)
+    }
+}
+
 pub struct SampleFile<R> {
     format: ::FileFormat,
     file_len: u64,

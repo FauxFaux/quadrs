@@ -13,7 +13,10 @@ pub struct Shift<S> {
     ratio: f64,
 }
 
-impl<S> Shift<S> {
+impl<S> Shift<S>
+where
+    S: Samples,
+{
     /// frequency: complete waves per second
     /// sample rate: samples per second
 

@@ -16,13 +16,12 @@ pub struct LowPass<S> {
 }
 
 impl<S> LowPass<S> {
-    pub fn new(inner: S) -> Self {
+    pub fn new(inner: S, frequency: u64, decimate: u64, sample_rate: u64, band: f32) -> Self {
         let decimate = 8;
 
-        let cutoff = cutoff_from_frequency(21e6 / decimate as f32, 21000000);
-        let band = 0.1;
+        let cutoff = cutoff_from_frequency(frequency as f64 / decimate as f64, sample_rate);
 
-        let filter = lowpass_filter(cutoff, band);
+        let filter = lowpass_filter(cutoff as f32, band);
         LowPass {
             inner,
             filter,
@@ -108,6 +107,6 @@ fn complex_convolve(filter: &[f32], input: &[Complex<f32>]) -> Vec<Complex<f32>>
     output
 }
 
-fn cutoff_from_frequency(frequency: f32, sample_rate: usize) -> f32 {
-    frequency / sample_rate as f32
+fn cutoff_from_frequency(frequency: f64, sample_rate: u64) -> f64 {
+    frequency / sample_rate as f64
 }
