@@ -102,18 +102,27 @@ pub fn parse<'a, I: Iterator<Item = &'a String>>(args: I) -> Result<Vec<Command>
                         .as_str(),
                 )?;
                 let mut map = into_map(cmd.as_str(), &opts)?;
-                let provided_band = map.remove("band");
-                let provided_decimate = map.remove("decimate");
+
+                // TODO: much better defaults
+                let band = match map.remove("band") {
+                    Some(val) => val.parse()?,
+                    None => 0.1,
+                };
+
+                let decimate = match map.remove("decimate") {
+                    Some(val) => val.parse()?,
+                    None => 8,
+                };
+
                 ensure!(
                     map.is_empty(),
                     "invalid flags for 'lowpass': {:?}",
                     map.keys()
                 );
 
-                // TODO: much better defaults
                 matched.push(Command::LowPass {
-                    band: provided_band.unwrap_or_else(|| "0.1".to_string()).parse()?,
-                    decimate: provided_decimate.unwrap_or_else(|| "8".to_string()).parse()?,
+                    band,
+                    decimate,
                     frequency,
                 })
             }
