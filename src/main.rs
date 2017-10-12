@@ -20,6 +20,7 @@ use rustfft::num_traits::identities::Zero;
 mod errors;
 mod filter;
 mod samples;
+mod shift;
 
 use errors::*;
 use samples::Samples;
@@ -58,9 +59,10 @@ fn run() -> Result<()> {
     };
 
     let mut file = samples::SampleFile::new(fs::File::open(path)?, format);
+    let mut file = shift::Shift::new(file, args.next().unwrap().parse().unwrap(), 32_000);
     let mut file = filter::LowPass::new(file);
 
-    const FFT_WIDTH: usize = 64;
+    const FFT_WIDTH: usize = 128;
 
     let fft = Radix4::new(FFT_WIDTH, false);
 
@@ -77,19 +79,18 @@ fn run() -> Result<()> {
 
         let graph: Vec<char> = " ▁▂▃▄▅▆▇█".chars().collect();
 
-        let distinction = 1.0 / (graph.len() as f32);
-
+        let max = out.iter()
+            .map(|x| x.norm())
+            .max_by(|x, y| x.partial_cmp(y).unwrap())
+            .unwrap();
+        let distinction = (max + 1.) / (graph.len() as f32);
         let mut buf = String::with_capacity(FFT_WIDTH);
         for val in out.iter().skip(FFT_WIDTH / 2).chain(
             out.iter().take(FFT_WIDTH / 2),
         )
         {
             let norm = val.norm();
-            if norm > 1.0 {
-                buf.push(graph[graph.len() - 1]);
-            } else {
-                buf.push(graph[(norm / distinction) as usize]);
-            }
+            buf.push(graph[(norm / distinction) as usize]);
         }
 
         println!("{}", buf);
