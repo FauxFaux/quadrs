@@ -19,7 +19,7 @@ impl<S> Shift<S> {
 
     pub fn new(inner: S, frequency: i64, sample_rate: u64) -> Self {
         assert!(
-            frequency < (sample_rate / 2) as i64,
+            frequency.abs() < (sample_rate / 2) as i64,
             "frequency must be under half the sample rate"
         );
         assert!(sample_rate > 0);
