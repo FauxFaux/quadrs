@@ -5,9 +5,7 @@ extern crate regex;
 extern crate rustfft;
 
 use std::env;
-use std::ffi;
 use std::fs;
-use std::io::Read;
 use std::mem;
 use std::path;
 
@@ -67,7 +65,7 @@ fn run() -> Result<()> {
     let us = args.next().unwrap();
 
 
-    let mut commands = args::parse(env::args())?;
+    let mut commands = args::parse(args)?;
     if commands.is_empty() {
         usage(us);
         bail!("no commands provided");
@@ -118,7 +116,7 @@ fn run() -> Result<()> {
     Ok(())
 }
 
-fn spark_fft(samples: &mut Box<Samples>, fft_width: u32, stride: u64) -> Result<()> {
+fn spark_fft(samples: &mut Samples, fft_width: u32, stride: u64) -> Result<()> {
 
     let fft_width = fft_width as usize;
 
@@ -164,8 +162,7 @@ impl FileFormat {
         use FileFormat::*;
         match *self {
             ComplexFloat32 => 4,
-            ComplexInt8 => 1,
-            ComplexUint8 => 1,
+            ComplexInt8 | ComplexUint8 => 1,
             ComplexInt16 => 2,
         }
     }
@@ -201,6 +198,8 @@ impl FileFormat {
     }
 }
 
+// clippy
+#[allow(unknown_lints, absurd_extreme_comparisons)]
 fn usize_from(val: u64) -> usize {
     assert!(val <= std::usize::MAX as u64);
     val as usize

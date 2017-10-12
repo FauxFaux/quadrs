@@ -1,9 +1,7 @@
 use std::f64::consts::PI;
 
 use rustfft::num_complex::Complex;
-use rustfft::num_traits::Zero;
 
-use usize_from;
 use samples::Samples;
 
 const TAU: f64 = PI * 2.;

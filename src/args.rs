@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
-use std::path::Path;
 
 use regex::Regex;
 
@@ -25,16 +24,11 @@ pub enum Command {
 
 const COMMANDS: &[&str] = &["from", "shift", "lowpass", "sparkfft"];
 
-pub fn parse<I: Iterator<Item = String>>(args: I) -> Result<Vec<Command>> {
+pub fn parse<'a, I: Iterator<Item = &'a String>>(args: I) -> Result<Vec<Command>> {
     let mut matched = vec![];
     let mut args = args.peekable();
-    let us = args.next().expect("argv[0] must be present");
 
-    loop {
-        let cmd = match args.next() {
-            Some(cmd) => cmd,
-            None => break,
-        };
+    while let Some(cmd) = args.next() {
 
         let mut opts = vec![];
         loop {
@@ -47,7 +41,7 @@ pub fn parse<I: Iterator<Item = String>>(args: I) -> Result<Vec<Command>> {
 
         match cmd.as_str() {
             "from" => {
-                let filename: String = opts.pop().ok_or("'from' requires a filename argument")?;
+                let filename = opts.pop().ok_or("'from' requires a filename argument")?;
                 let mut map = into_map(cmd.as_str(), &opts)?;
                 let provided_sample_rate = map.remove("sr");
                 let provided_format = map.remove("format");
@@ -89,7 +83,7 @@ pub fn parse<I: Iterator<Item = String>>(args: I) -> Result<Vec<Command>> {
                 matched.push(Command::From {
                     sample_rate,
                     format,
-                    filename,
+                    filename: filename.to_string(),
                 });
 
             }
@@ -118,15 +112,19 @@ pub fn parse<I: Iterator<Item = String>>(args: I) -> Result<Vec<Command>> {
 
                 // TODO: much better defaults
                 matched.push(Command::LowPass {
-                    band: provided_band.unwrap_or("0.1".to_string()).parse()?,
-                    decimate: provided_decimate.unwrap_or("8".to_string()).parse()?,
+                    band: provided_band.unwrap_or_else(|| "0.1".to_string()).parse()?,
+                    decimate: provided_decimate.unwrap_or_else(|| "8".to_string()).parse()?,
                     frequency,
                 })
             }
             "sparkfft" => {
                 let mut map = into_map(cmd.as_str(), &opts)?;
-                let width = map.remove("width").unwrap_or("128".to_string()).parse()?;
-                let stride = map.remove("stride").unwrap_or("1".to_string()).parse()?;
+                let width = map.remove("width")
+                    .unwrap_or_else(|| "128".to_string())
+                    .parse()?;
+                let stride = map.remove("stride")
+                    .unwrap_or_else(|| "1".to_string())
+                    .parse()?;
                 ensure!(
                     map.is_empty(),
                     "invalid flags for 'sparkfft': {:?}",
@@ -167,32 +165,20 @@ fn parse_si(from: &str) -> Result<u64> {
 fn guess_from_extension(ext: &str) -> Result<FileFormat> {
     use FileFormat::*;
     Ok(match ext {
-        "cf32" => ComplexFloat32,
-        "cs8" => ComplexInt8,
-        "cu8" => ComplexUint8,
-        "cs16" => ComplexInt16,
-
-        // Non-canonical extensions
-        "fc32" => ComplexFloat32,
-        "sc8" => ComplexInt8,
-        "c8" => ComplexInt8,
-        "su8" => ComplexUint8,
-        "sc16" => ComplexInt16,
-        "c16" => ComplexInt16,
+        "cf32" | "fc32" => ComplexFloat32,
+        "cs8" | "sc8" | "c8" => ComplexInt8,
+        "cu8" | "su8" => ComplexUint8,
+        "cs16" | "sc16" | "c16" => ComplexInt16,
 
         other => bail!("unrecognised format code '{}'", other),
     })
 }
 
-fn into_map(cmd: &str, vec: &[String]) -> Result<HashMap<String, String>> {
+fn into_map(cmd: &str, vec: &[&String]) -> Result<HashMap<String, String>> {
     let mut ret = HashMap::with_capacity(vec.len() / 2);
     let mut iter = vec.iter();
-    loop {
-        let opt = match iter.next() {
-            Some(opt) => opt,
-            None => break,
-        };
 
+    while let Some(opt) = iter.next() {
         if opt.is_empty() || !opt.starts_with('-') {
             bail!(
                 "{} encountered an argument that doesn't look like an argument: '{}'",
