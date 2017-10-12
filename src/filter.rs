@@ -17,7 +17,7 @@ pub struct LowPass<S> {
 
 impl<S> LowPass<S> {
     pub fn new(inner: S, frequency: u64, decimate: u64, sample_rate: u64, band: f32) -> Self {
-        let cutoff = cutoff_from_frequency(frequency as f64 / decimate as f64, sample_rate);
+        let cutoff = cutoff_from_frequency(frequency as f64, sample_rate);
 
         let filter = lowpass_filter(cutoff as f32, band);
         LowPass {

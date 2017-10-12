@@ -19,7 +19,12 @@ pub enum Command {
         decimate: u64,
         frequency: u64,
     },
-    SparkFft { width: u32, stride: u64 },
+    SparkFft {
+        width: u32,
+        stride: u64,
+        min: Option<f32>,
+        max: Option<f32>,
+    },
 }
 
 const COMMANDS: &[&str] = &["from", "shift", "lowpass", "sparkfft"];
@@ -138,13 +143,33 @@ pub fn parse<'a, I: Iterator<Item = &'a String>>(args: I) -> Result<Vec<Command>
                     None => width as u64,
                 };
 
+                let (min, max) = match map.remove("range") {
+                    Some(val) => {
+                        let (min, max) = val.split_at(val.find(':').ok_or_else(|| {
+                            format!("range argument must contain a ':': '{}'", val)
+                        })?);
+
+                        println!("{} {}", min, max);
+                        let min: f32 = min.parse()?;
+                        let max: f32 = max.chars().skip(1).collect::<String>().parse()?;
+
+                        (Some(min), Some(max))
+                    }
+                    None => (None, None),
+                };
+
                 ensure!(
                     map.is_empty(),
                     "invalid flags for 'sparkfft': {:?}",
                     map.keys()
                 );
 
-                matched.push(Command::SparkFft { width, stride });
+                matched.push(Command::SparkFft {
+                    width,
+                    stride,
+                    min,
+                    max,
+                });
             }
             other => bail!("unrecognised command: '{}'", other),
         }

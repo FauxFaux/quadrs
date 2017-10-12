@@ -47,7 +47,7 @@ fn usage(us: &str) {
     println!("    from [-sr SAMPLE_RATE] [-format cf32|cs8|cu8|cs16] FILENAME.sr32k.cf32 \\");
     println!("   shift [-]FREQUENCY \\");
     println!(" lowpass [-band BAND] [-decimate DECIMATE] FREQUENCY \\");
-    println!("sparkfft [-width 128] [-stride STRIDE]");
+    println!("sparkfft [-width 128] [-stride STRIDE] [-range LOW:HIGH]");
 
     println!();
     println!();
@@ -57,6 +57,7 @@ fn usage(us: &str) {
     println!(" *  cs8: complex      signed (integers),  8-bit (HackRF)");
     println!(" *  cu8: complex    unsigned (integers),  8-bit (RTL-SDR)");
     println!(" * cs16: complex      signed (integers), 16-bit (Fancy)");
+    println!();
 }
 
 fn run() -> Result<()> {
@@ -107,8 +108,13 @@ fn run() -> Result<()> {
                     band,
                 ))
             }
-            SparkFft { width, stride } => {
-                spark_fft(&mut samples, width, stride)?;
+            SparkFft {
+                width,
+                stride,
+                min,
+                max,
+            } => {
+                spark_fft(&mut samples, width, stride, min, max)?;
             }
         }
     }
@@ -116,7 +122,17 @@ fn run() -> Result<()> {
     Ok(())
 }
 
-fn spark_fft(samples: &mut Samples, fft_width: u32, stride: u64) -> Result<()> {
+fn spark_fft(
+    samples: &mut Samples,
+    fft_width: u32,
+    stride: u64,
+    min: Option<f32>,
+    max: Option<f32>,
+) -> Result<()> {
+
+    // TODO: super dumb:
+    let min = min.unwrap_or(0.08);
+    let max = max.unwrap_or(1.);
 
     let fft_width = fft_width as usize;
 
@@ -133,23 +149,33 @@ fn spark_fft(samples: &mut Samples, fft_width: u32, stride: u64) -> Result<()> {
         fft.process(&mut inp, &mut out);
         mem::drop(inp); // inp is now junk
 
-        let graph: Vec<char> = " ▁▂▃▄▅▆▇█".chars().collect();
+        let top = '█';
+        let bot = ' ';
+        let graph: Vec<char> = "▁▂▃▄▅▆▇".chars().collect();
 
+        #[cfg(never)]
         let max = out.iter()
             .map(|x| x.norm())
             .max_by(|x, y| x.partial_cmp(y).unwrap())
             .unwrap();
-        let distinction = (max + 1.) / (graph.len() as f32);
+
+        let distinction = (max - min) / (graph.len() as f32);
         let mut buf = String::with_capacity(fft_width);
         for val in out.iter().skip(fft_width / 2).chain(
             out.iter().take(fft_width / 2),
         )
         {
             let norm = val.norm();
-            buf.push(graph[(norm / distinction) as usize]);
+            if norm < min {
+                buf.push(bot);
+            } else if norm >= max {
+                buf.push(top);
+            } else {
+                buf.push(graph[((norm - min) / distinction) as usize]);
+            }
         }
 
-        println!("{}", buf);
+        println!("│{}│", buf);
 
         i += stride;
     }
