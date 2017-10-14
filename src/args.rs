@@ -28,6 +28,10 @@ pub enum Command {
         min: Option<f32>,
         max: Option<f32>,
     },
+    Write {
+        overwrite: bool,
+        prefix: String,
+    }
 }
 
 pub fn parse<'a, I: Iterator<Item = &'a String>>(args: I) -> Result<Vec<Command>> {
@@ -42,6 +46,7 @@ pub fn parse<'a, I: Iterator<Item = &'a String>>(args: I) -> Result<Vec<Command>
             "shift" => parse_shift(&mut args, map)?,
             "lowpass" => parse_lowpass(&mut args, map)?,
             "sparkfft" => parse_sparkfft(&mut args, map)?,
+            "write" => parse_write(&mut args, map)?,
             other => bail!("unrecognised command: '{}'", other),
         });
     }
@@ -181,6 +186,31 @@ fn parse_sparkfft<'a, I: Iterator<Item = &'a String>>(
     })
 }
 
+fn parse_write<'a, I: Iterator<Item = &'a String>>(
+    mut args: I,
+    mut map: HashMap<String, String>,
+) -> Result<Command> {
+
+    let overwrite = match map.remove("overwrite") {
+        Some(val) => parse_bool(&val)?,
+        None => false
+    };
+
+    ensure!(
+        map.is_empty(),
+        "invalid flags for 'write': {:?}",
+        map.keys()
+    );
+
+    let prefix: String = args.next().ok_or("'lowpass' requires a frequency argument")?.to_string();
+
+    Ok(Command::Write {
+        overwrite,
+        prefix
+    })
+}
+
+
 fn guess_sample_rate(filename: &str) -> Result<String> {
     Ok(
         Regex::new(r"\bsr([0-9]+[kMG]?)\b")?
@@ -236,6 +266,17 @@ fn parse_si_f64(from: &str) -> Result<f64> {
     let (val, mul) = find_multiplication_suffix(from);
     let parsed: f64 = val.parse()?;
     Ok(parsed * f64::from(mul))
+}
+
+fn parse_bool(from: &str) -> Result<bool> {
+    match from.parse() {
+        Ok(val) => Ok(val),
+        Err(_) => match from {
+            "yes" | "y" => Ok(true),
+            "no" | "n" => Ok(false),
+            other => bail!("unacceptable boolean value: '{}'", other)
+        }
+    }
 }
 
 

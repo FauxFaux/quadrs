@@ -46,7 +46,8 @@ fn usage(us: &str) {
     println!("    from [-sr SAMPLE_RATE] [-format cf32|cs8|cu8|cs16] FILENAME.sr32k.cf32 \\");
     println!("   shift [-]FREQUENCY \\");
     println!(" lowpass [-power 20] [-decimate 8] FREQUENCY \\");
-    println!("sparkfft [-width 128] [-stride STRIDE] [-range LOW:HIGH]");
+    println!("sparkfft [-width 128] [-stride STRIDE] [-range LOW:HIGH] \\");
+    println!("   write [-overwrite no] FILENAME_PREFIX \\");
 
     println!();
     println!();
@@ -121,6 +122,11 @@ fn run() -> Result<()> {
                     max,
                 )?;
             }
+            Write {
+                overwrite, prefix
+            } => {
+                do_write(samples.as_mut().ok_or("write requires an input")?, overwrite, &prefix)?
+            }
         }
     }
 
@@ -183,6 +189,39 @@ fn spark_fft(
         println!("│{}│", buf);
 
         i += stride;
+    }
+
+    Ok(())
+}
+
+fn do_write(samples: &mut Samples, overwrite: bool, prefix: &str) -> Result<()> {
+    if "-" == prefix {
+        unimplemented!()
+    }
+
+    use std::fs;
+    use std::io;
+    use byteorder::WriteBytesExt;
+
+
+    let mut options = fs::OpenOptions::new();
+    options.write(true);
+    if overwrite {
+        options.create(true);
+    } else {
+        options.create_new(true);
+    }
+
+    let filename = format!("{}.sr{}.cf32", prefix, samples.sample_rate());
+
+    let mut file = io::BufWriter::new(options.open(filename)?);
+    use byteorder::LittleEndian;
+
+    for off in 0..samples.len() {
+        let mut sample = [Complex::zero(); 1];
+        assert_eq!(1, samples.read_at(off, &mut sample));
+        file.write_f32::<LittleEndian>(sample[0].re)?;
+        file.write_f32::<LittleEndian>(sample[0].im)?;
     }
 
     Ok(())
