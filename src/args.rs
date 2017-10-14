@@ -187,26 +187,31 @@ fn guess_sample_rate(filename: &str) -> Result<String> {
     )
 }
 
-fn parse_si(from: &str) -> Result<u64> {
-    let last = from.chars().last().ok_or(
-        "empty strings aren't valid integers",
-    )?;
-    let mul: Option<u64> = match last {
+fn find_multiplication_suffix(from: &str) -> (&str, u32) {
+    let (pos, suffix) = match from.char_indices().last() {
+        Some(x) => x,
+        None => return (from, 1),
+    };
+
+    let mul: Option<u32> = match suffix {
         'k' => Some(1_000),
         'M' => Some(1_000_000),
         'G' => Some(1_000_000_000),
         _ => None,
     };
 
-    if let Some(mul) = mul {
-        let prefix: String = from.chars().take(from.chars().count() - 1).collect();
-        let parsed: u64 = prefix.parse()?;
-        Ok(parsed.checked_mul(mul).ok_or_else(|| {
-            format!("unit is out of range: {}", from)
-        })?)
-    } else {
-        Ok(from.parse()?)
+    match mul {
+        Some(mul) => (&from[..pos], mul),
+        None => (from, 1),
     }
+}
+
+fn parse_si(from: &str) -> Result<u64> {
+    let (val, mul) = find_multiplication_suffix(from);
+    let parsed: u64 = val.parse()?;
+    Ok(parsed.checked_mul(u64::from(mul)).ok_or_else(|| {
+        format!("unit is out of range: {}", from)
+    })?)
 }
 
 fn guess_from_extension(ext: &str) -> Result<FileFormat> {
@@ -264,4 +269,16 @@ where
     }
 
     Ok(ret)
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn mega() {
+        use super::parse_si;
+        assert_eq!(123, parse_si("123").unwrap());
+        assert_eq!(1_000, parse_si("1k").unwrap());
+        assert_eq!(47_000, parse_si("47k").unwrap());
+        assert_eq!(0, parse_si("0M").unwrap());
+    }
 }
