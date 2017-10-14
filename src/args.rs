@@ -6,6 +6,8 @@ use regex::Regex;
 
 use errors::*;
 
+use usize_from;
+use u64_from;
 use FileFormat;
 
 pub enum Command {
@@ -16,12 +18,12 @@ pub enum Command {
     },
     Shift { frequency: i64 },
     LowPass {
-        band: f32,
+        band: f64,
         decimate: u64,
         frequency: u64,
     },
     SparkFft {
-        width: u32,
+        width: usize,
         stride: u64,
         min: Option<f32>,
         max: Option<f32>,
@@ -55,7 +57,7 @@ fn parse_from<'a, I: Iterator<Item = &'a String>>(
     let provided_sample_rate = map.remove("sr");
     let provided_format = map.remove("format");
     ensure!(map.is_empty(), "invalid flags for 'from': {:?}", map.keys());
-    let sample_rate = parse_si(
+    let sample_rate = parse_si_u64(
         match provided_sample_rate {
             Some(rate) => rate,
             None => guess_sample_rate(filename)?,
@@ -89,9 +91,7 @@ fn parse_shift<'a, I: Iterator<Item = &'a String>>(
 ) -> Result<Command> {
     ensure!(map.is_empty(), "'shift' has no named arguments");
     Ok(Command::Shift {
-        frequency: args.next()
-            .ok_or("'shift' requires a frequency argument")?
-            .parse()?,
+        frequency: parse_si_i64(args.next().ok_or("'shift' requires a frequency argument")?)?,
     })
 }
 
@@ -99,7 +99,7 @@ fn parse_lowpass<'a, I: Iterator<Item = &'a String>>(
     mut args: I,
     mut map: HashMap<String, String>,
 ) -> Result<Command> {
-    let frequency: u64 = parse_si(
+    let frequency: u64 = parse_si_u64(
         args.next()
             .ok_or("'lowpass' requires a frequency argument")?
             .as_str(),
@@ -107,12 +107,12 @@ fn parse_lowpass<'a, I: Iterator<Item = &'a String>>(
 
     // TODO: much better defaults
     let band = match map.remove("band") {
-        Some(val) => val.parse()?,
+        Some(val) => parse_si_f64(&val)?,
         None => 0.1,
     };
 
     let decimate = match map.remove("decimate") {
-        Some(val) => val.parse()?,
+        Some(val) => parse_si_u64(&val)?,
         None => 8,
     };
 
@@ -134,13 +134,13 @@ fn parse_sparkfft<'a, I: Iterator<Item = &'a String>>(
     mut map: HashMap<String, String>,
 ) -> Result<Command> {
     let width = match map.remove("width") {
-        Some(val) => val.parse()?,
-        None => 128u32,
+        Some(val) => usize_from(parse_si_u64(&val)?),
+        None => 128,
     };
 
     let stride = match map.remove("stride") {
-        Some(val) => val.parse()?,
-        None => u64::from(width),
+        Some(val) => parse_si_u64(&val)?,
+        None => u64_from(width),
     };
 
     let (min, max) = match map.remove("range") {
@@ -206,13 +206,28 @@ fn find_multiplication_suffix(from: &str) -> (&str, u32) {
     }
 }
 
-fn parse_si(from: &str) -> Result<u64> {
+fn parse_si_i64(from: &str) -> Result<i64> {
+    let (val, mul) = find_multiplication_suffix(from);
+    let parsed: i64 = val.parse()?;
+    Ok(parsed.checked_mul(i64::from(mul)).ok_or_else(|| {
+        format!("unit is out of range: {}", from)
+    })?)
+}
+
+fn parse_si_u64(from: &str) -> Result<u64> {
     let (val, mul) = find_multiplication_suffix(from);
     let parsed: u64 = val.parse()?;
     Ok(parsed.checked_mul(u64::from(mul)).ok_or_else(|| {
         format!("unit is out of range: {}", from)
     })?)
 }
+
+fn parse_si_f64(from: &str) -> Result<f64> {
+    let (val, mul) = find_multiplication_suffix(from);
+    let parsed: f64 = val.parse()?;
+    Ok(parsed * f64::from(mul))
+}
+
 
 fn guess_from_extension(ext: &str) -> Result<FileFormat> {
     use FileFormat::*;
@@ -275,10 +290,10 @@ where
 mod tests {
     #[test]
     fn mega() {
-        use super::parse_si;
-        assert_eq!(123, parse_si("123").unwrap());
-        assert_eq!(1_000, parse_si("1k").unwrap());
-        assert_eq!(47_000, parse_si("47k").unwrap());
-        assert_eq!(0, parse_si("0M").unwrap());
+        use super::parse_si_u64;
+        assert_eq!(123, parse_si_u64("123").unwrap());
+        assert_eq!(1_000, parse_si_u64("1k").unwrap());
+        assert_eq!(47_000, parse_si_u64("47k").unwrap());
+        assert_eq!(0, parse_si_u64("0M").unwrap());
     }
 }

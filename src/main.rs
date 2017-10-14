@@ -129,7 +129,7 @@ fn run() -> Result<()> {
 
 fn spark_fft(
     samples: &mut Samples,
-    fft_width: u32,
+    fft_width: usize,
     stride: u64,
     min: Option<f32>,
     max: Option<f32>,
@@ -234,4 +234,11 @@ impl FileFormat {
 fn usize_from(val: u64) -> usize {
     assert!(val <= std::usize::MAX as u64);
     val as usize
+}
+
+// clippy
+#[allow(unknown_lints, absurd_extreme_comparisons)]
+fn u64_from(val: usize) -> u64 {
+    assert!((val as u64) <= std::u64::MAX);
+    val as u64
 }
