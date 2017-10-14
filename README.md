@@ -3,7 +3,7 @@
 usage: quadrs \
     from [-sr SAMPLE_RATE] [-format cf32|cs8|cu8|cs16] FILENAME.sr32k.cf32 \
    shift [-]FREQUENCY \
- lowpass [-band BAND] [-decimate DECIMATE] FREQUENCY \
+ lowpass [-power 40] [-decimate 8] FREQUENCY \
 sparkfft [-width 128] [-stride STRIDE] [-range LOW:HIGH]
 
 
@@ -64,14 +64,14 @@ $ quadrs \
 
 Notice how the shifting has ANGERED the DC bias bar into a wider bar.
 We can punch our low-pass filter up a notch to shut it up again, by
-lowering `band`, which is a work factor (smaller is better) and
+increasing `power`, which is a work factor (bigger is better) and
 narrowing the frequency:
 
 ```
 $ quadrs \
     from fsk-example.sr21M.fc32 \
     shift 280000
-    lowpass -band 0.01 -decimate 16 200000 \
+    lowpass -power 400 -decimate 16 200000 \
     sparkfft
 ```
 
@@ -88,7 +88,7 @@ small flickers of signal. To compensate for the reduced width, we can
 $ quadrs \
     from fsk-example.sr21M.fc32 \
     shift 280000 \
-    lowpass -band 0.01 -decimate 32 200000 \
+    lowpass -power 400 -decimate 32 200000 \
     sparkfft -width 64 -stride 16
 ```
 

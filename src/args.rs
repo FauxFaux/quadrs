@@ -18,7 +18,7 @@ pub enum Command {
     },
     Shift { frequency: i64 },
     LowPass {
-        band: f64,
+        power: usize,
         decimate: u64,
         frequency: u64,
     },
@@ -111,9 +111,9 @@ fn parse_lowpass<'a, I: Iterator<Item = &'a String>>(
     )?;
 
     // TODO: much better defaults
-    let band = match map.remove("band") {
-        Some(val) => parse_si_f64(&val)?,
-        None => 0.1,
+    let power = match map.remove("power") {
+        Some(val) => usize_from(parse_si_u64(&val)?),
+        None => 40,
     };
 
     let decimate = match map.remove("decimate") {
@@ -128,7 +128,7 @@ fn parse_lowpass<'a, I: Iterator<Item = &'a String>>(
     );
 
     Ok(Command::LowPass {
-        band,
+        power,
         decimate,
         frequency,
     })
