@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
+use std::iter::Peekable;
 
 use regex::Regex;
 
@@ -27,31 +28,19 @@ pub enum Command {
     },
 }
 
-const COMMANDS: &[&str] = &["from", "shift", "lowpass", "sparkfft"];
-
 pub fn parse<'a, I: Iterator<Item = &'a String>>(args: I) -> Result<Vec<Command>> {
     let mut matched = vec![];
     let mut args = args.peekable();
 
     while let Some(cmd) = args.next() {
-
-        let mut opts = vec![];
-        loop {
-            match args.peek() {
-                Some(val) if !COMMANDS.contains(&val.as_str()) => val,
-                _ => break,
-            };
-            opts.push(args.next().expect("just peeked that"));
-        }
+        let mut map = read_just_args(cmd.as_str(), &mut args)?;
 
         match cmd.as_str() {
             "from" => {
-                let filename = opts.pop().ok_or("'from' requires a filename argument")?;
-                let mut map = into_map(cmd.as_str(), &opts)?;
+                let filename = args.next().ok_or("'from' requires a filename argument")?;
                 let provided_sample_rate = map.remove("sr");
                 let provided_format = map.remove("format");
                 ensure!(map.is_empty(), "invalid flags for 'from': {:?}", map.keys());
-
                 let sample_rate = parse_si(
                     match provided_sample_rate {
                         Some(rate) => rate,
@@ -81,20 +70,19 @@ pub fn parse<'a, I: Iterator<Item = &'a String>>(args: I) -> Result<Vec<Command>
 
             }
             "shift" => {
-                ensure!(opts.len() == 1, "'shift' has only one argument: frequency");
+                ensure!(map.is_empty(), "'shift' has no named arguments");
                 matched.push(Command::Shift {
-                    frequency: opts.pop()
+                    frequency: args.next()
                         .ok_or("'shift' requires a frequency argument")?
                         .parse()?,
                 });
             }
             "lowpass" => {
                 let frequency: u64 = parse_si(
-                    opts.pop()
+                    args.next()
                         .ok_or("'lowpass' requires a frequency argument")?
                         .as_str(),
                 )?;
-                let mut map = into_map(cmd.as_str(), &opts)?;
 
                 // TODO: much better defaults
                 let band = match map.remove("band") {
@@ -120,7 +108,6 @@ pub fn parse<'a, I: Iterator<Item = &'a String>>(args: I) -> Result<Vec<Command>
                 })
             }
             "sparkfft" => {
-                let mut map = into_map(cmd.as_str(), &opts)?;
                 let width = match map.remove("width") {
                     Some(val) => val.parse()?,
                     None => 128u32,
@@ -216,18 +203,23 @@ fn guess_from_extension(ext: &str) -> Result<FileFormat> {
     })
 }
 
-fn into_map(cmd: &str, vec: &[&String]) -> Result<HashMap<String, String>> {
-    let mut ret = HashMap::with_capacity(vec.len() / 2);
-    let mut iter = vec.iter();
+fn read_just_args<'a, I>(cmd: &str, iter: &mut Peekable<I>) -> Result<HashMap<String, String>>
+where
+    I: Iterator<Item = &'a String>,
+{
+    let mut ret = HashMap::new();
 
-    while let Some(opt) = iter.next() {
-        if opt.is_empty() || !opt.starts_with('-') {
-            bail!(
-                "{} encountered an argument that doesn't look like an argument: '{}'",
-                cmd,
-                opt
-            );
+    loop {
+        // borrow checker :((
+        if let Some(opt) = iter.peek() {
+            if opt.is_empty() || !opt.starts_with('-') {
+                break;
+            }
+        } else {
+            break;
         }
+
+        let opt = iter.next().expect("just peeked that");
 
         let arg = match iter.next() {
             Some(arg) if arg.is_empty() => {
