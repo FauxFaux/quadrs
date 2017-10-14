@@ -7,7 +7,6 @@ extern crate rustfft;
 use std::env;
 use std::fs;
 use std::mem;
-use std::path;
 
 use byteorder::ByteOrder;
 
@@ -66,47 +65,47 @@ fn run() -> Result<()> {
     let us = args.next().unwrap();
 
 
-    let mut commands = args::parse(args)?;
+    let commands = args::parse(args)?;
     if commands.is_empty() {
         usage(us);
         bail!("no commands provided");
     }
 
-    let from = commands.remove(0);
-
-    let (path, format, sample_rate) = if let args::Command::From {
-        filename,
-        format,
-        sample_rate,
-    } = from
-    {
-        (path::PathBuf::from(filename), format, sample_rate)
-    } else {
-        bail!("first command must be 'from'");
-    };
-
-    let mut samples: Box<Samples> =
-        Box::new(samples::SampleFile::new(fs::File::open(path)?, format));
+    let mut samples: Option<Box<Samples>> = None;
 
     use args::Command::*;
     for cmd in commands {
         match cmd {
-            From { .. } => bail!("multiple from commands are unsupported"),
+            From {
+                filename,
+                format,
+                sample_rate,
+            } => {
+                samples = Some(Box::new(samples::SampleFile::new(
+                    fs::File::open(filename)?,
+                    format,
+                    sample_rate,
+                )))
+            }
             Shift { frequency } => {
-                samples = Box::new(shift::Shift::new(samples, frequency, sample_rate));
+                let orig = samples.ok_or("shift requires an input")?;
+                let sample_rate = orig.sample_rate();
+                samples = Some(Box::new(shift::Shift::new(orig, frequency, sample_rate)))
             }
             LowPass {
                 band,
                 decimate,
                 frequency,
             } => {
-                samples = Box::new(filter::LowPass::new(
-                    samples,
+                let orig = samples.ok_or("lowpass requires an input")?;
+                let original_sample_rate = orig.sample_rate();
+                samples = Some(Box::new(filter::LowPass::new(
+                    orig,
                     frequency,
                     decimate,
-                    sample_rate,
+                    original_sample_rate,
                     band,
-                ))
+                )))
             }
             SparkFft {
                 width,
@@ -114,7 +113,13 @@ fn run() -> Result<()> {
                 min,
                 max,
             } => {
-                spark_fft(&mut samples, width, stride, min, max)?;
+                spark_fft(
+                    samples.as_mut().ok_or("sparkfft requires an input")?,
+                    width,
+                    stride,
+                    min,
+                    max,
+                )?;
             }
         }
     }

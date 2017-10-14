@@ -10,6 +10,7 @@ use usize_from;
 pub trait Samples {
     fn len(&self) -> u64;
     fn read_at(&mut self, off: u64, buf: &mut [Complex<f32>]) -> usize;
+    fn sample_rate(&self) -> u64;
 
     fn read_exact_at(&mut self, off: u64, buf: &mut [Complex<f32>]) -> Result<()> {
         let wanted = buf.len();
@@ -29,6 +30,10 @@ impl<T: Samples + ?Sized> Samples for Box<T> {
         (**self).len()
     }
 
+    fn sample_rate(&self) -> u64 {
+        (**self).sample_rate()
+    }
+
     fn read_at(&mut self, off: u64, buf: &mut [Complex<f32>]) -> usize {
         (**self).read_at(off, buf)
     }
@@ -38,18 +43,20 @@ pub struct SampleFile<R> {
     format: ::FileFormat,
     file_len: u64,
     inner: R,
+    sample_rate: u64,
 }
 
 impl<R> SampleFile<R>
 where
     R: Read + Seek,
 {
-    pub fn new(mut inner: R, format: ::FileFormat) -> Self {
+    pub fn new(mut inner: R, format: ::FileFormat, sample_rate: u64) -> Self {
         let file_len = inner.seek(SeekFrom::End(0)).expect("seeking to end");
         SampleFile {
             inner,
             format,
             file_len,
+            sample_rate,
         }
     }
 }
@@ -60,6 +67,10 @@ where
 {
     fn len(&self) -> u64 {
         self.file_len / self.format.pair_bytes()
+    }
+
+    fn sample_rate(&self) -> u64 {
+        self.sample_rate
     }
 
     fn read_at(&mut self, off: u64, into: &mut [Complex<f32>]) -> usize {

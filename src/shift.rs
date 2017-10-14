@@ -9,6 +9,7 @@ const TAU: f64 = PI * 2.;
 pub struct Shift<S> {
     inner: S,
     ratio: f64,
+    sample_rate: u64,
 }
 
 impl<S> Shift<S>
@@ -28,6 +29,7 @@ where
         Shift {
             inner,
             ratio: TAU * (frequency as f64) / (sample_rate as f64),
+            sample_rate,
         }
     }
 }
@@ -38,6 +40,10 @@ where
 {
     fn len(&self) -> u64 {
         self.inner.len()
+    }
+
+    fn sample_rate(&self) -> u64 {
+        self.sample_rate
     }
 
     fn read_at(&mut self, off: u64, buf: &mut [Complex<f32>]) -> usize {

@@ -13,17 +13,25 @@ pub struct LowPass<S> {
     inner: S,
     filter: Vec<f32>,
     decimate: u64,
+    original_sample_rate: u64,
 }
 
 impl<S> LowPass<S> {
-    pub fn new(inner: S, frequency: u64, decimate: u64, sample_rate: u64, band: f32) -> Self {
-        let cutoff = cutoff_from_frequency(frequency as f64, sample_rate);
+    pub fn new(
+        inner: S,
+        frequency: u64,
+        decimate: u64,
+        original_sample_rate: u64,
+        band: f32,
+    ) -> Self {
+        let cutoff = cutoff_from_frequency(frequency as f64, original_sample_rate);
 
         let filter = lowpass_filter(cutoff as f32, band);
         LowPass {
             inner,
             filter,
             decimate,
+            original_sample_rate,
         }
     }
 }
@@ -35,6 +43,10 @@ where
     fn len(&self) -> u64 {
         // TODO: subtract edges?
         self.inner.len() / self.decimate
+    }
+
+    fn sample_rate(&self) -> u64 {
+        self.original_sample_rate / self.decimate
     }
 
     fn read_at(&mut self, off: u64, buf: &mut [Complex<f32>]) -> usize {
