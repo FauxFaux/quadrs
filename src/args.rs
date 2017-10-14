@@ -18,7 +18,7 @@ pub enum Command {
     },
     Shift { frequency: i64 },
     LowPass {
-        power: usize,
+        size: usize,
         decimate: u64,
         frequency: u64,
     },
@@ -111,8 +111,12 @@ fn parse_lowpass<'a, I: Iterator<Item = &'a String>>(
     )?;
 
     // TODO: much better defaults
-    let power = match map.remove("power") {
-        Some(val) => usize_from(parse_si_u64(&val)?),
+    let size = match map.remove("power") {
+        Some(val) => {
+            usize_from(parse_si_u64(&val)?).checked_mul(2).ok_or(
+                "power is too large",
+            )?
+        }
         None => 40,
     };
 
@@ -128,7 +132,7 @@ fn parse_lowpass<'a, I: Iterator<Item = &'a String>>(
     );
 
     Ok(Command::LowPass {
-        power,
+        size,
         decimate,
         frequency,
     })

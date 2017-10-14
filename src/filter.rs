@@ -22,11 +22,11 @@ impl<S> LowPass<S> {
         frequency: u64,
         decimate: u64,
         original_sample_rate: u64,
-        power: usize,
+        size: usize,
     ) -> Self {
         let cutoff = cutoff_from_frequency(frequency as f64, original_sample_rate);
 
-        let filter = lowpass_filter(cutoff as f32, power);
+        let filter = lowpass_filter(cutoff as f32, size);
         LowPass {
             inner,
             filter,
@@ -70,9 +70,7 @@ where
     }
 }
 
-fn lowpass_filter(cutoff: f32, power: usize) -> Vec<f32> {
-    let size = power * 2;
-
+fn lowpass_filter(cutoff: f32, size: usize) -> Vec<f32> {
     fn sinc(x: f32) -> f32 {
         (x * PI).sin() / (x * PI)
     }

@@ -45,7 +45,7 @@ fn usage(us: &str) {
     println!("usage: {} \\", us);
     println!("    from [-sr SAMPLE_RATE] [-format cf32|cs8|cu8|cs16] FILENAME.sr32k.cf32 \\");
     println!("   shift [-]FREQUENCY \\");
-    println!(" lowpass [-power 40] [-decimate 8] FREQUENCY \\");
+    println!(" lowpass [-power 20] [-decimate 8] FREQUENCY \\");
     println!("sparkfft [-width 128] [-stride STRIDE] [-range LOW:HIGH]");
 
     println!();
@@ -93,7 +93,7 @@ fn run() -> Result<()> {
                 samples = Some(Box::new(shift::Shift::new(orig, frequency, sample_rate)))
             }
             LowPass {
-                power,
+                size,
                 decimate,
                 frequency,
             } => {
@@ -104,7 +104,7 @@ fn run() -> Result<()> {
                     frequency,
                     decimate,
                     original_sample_rate,
-                    power,
+                    size,
                 )))
             }
             SparkFft {
