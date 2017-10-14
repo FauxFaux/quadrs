@@ -33,124 +33,142 @@ pub fn parse<'a, I: Iterator<Item = &'a String>>(args: I) -> Result<Vec<Command>
     let mut args = args.peekable();
 
     while let Some(cmd) = args.next() {
-        let mut map = read_just_args(cmd.as_str(), &mut args)?;
+        let map = read_just_args(cmd.as_str(), &mut args)?;
 
-        match cmd.as_str() {
-            "from" => {
-                let filename = args.next().ok_or("'from' requires a filename argument")?;
-                let provided_sample_rate = map.remove("sr");
-                let provided_format = map.remove("format");
-                ensure!(map.is_empty(), "invalid flags for 'from': {:?}", map.keys());
-                let sample_rate = parse_si(
-                    match provided_sample_rate {
-                        Some(rate) => rate,
-                        None => guess_sample_rate(filename)?,
-                    }.as_str(),
-                )?;
-
-                let format = guess_from_extension(
-                    match provided_format {
-                        Some(fmt) => fmt.to_string(),
-                        None => {
-                            // EURGH
-                            let ext_start = 1 +
-                                filename.rfind('.').ok_or_else(|| {
-                                    format!("can't guess format as no extension: '{}'", filename)
-                                })?;
-                            String::from_utf8(filename.bytes().skip(ext_start).collect()).unwrap()
-                        }
-                    }.as_str(),
-                )?;
-
-                matched.push(Command::From {
-                    sample_rate,
-                    format,
-                    filename: filename.to_string(),
-                });
-
-            }
-            "shift" => {
-                ensure!(map.is_empty(), "'shift' has no named arguments");
-                matched.push(Command::Shift {
-                    frequency: args.next()
-                        .ok_or("'shift' requires a frequency argument")?
-                        .parse()?,
-                });
-            }
-            "lowpass" => {
-                let frequency: u64 = parse_si(
-                    args.next()
-                        .ok_or("'lowpass' requires a frequency argument")?
-                        .as_str(),
-                )?;
-
-                // TODO: much better defaults
-                let band = match map.remove("band") {
-                    Some(val) => val.parse()?,
-                    None => 0.1,
-                };
-
-                let decimate = match map.remove("decimate") {
-                    Some(val) => val.parse()?,
-                    None => 8,
-                };
-
-                ensure!(
-                    map.is_empty(),
-                    "invalid flags for 'lowpass': {:?}",
-                    map.keys()
-                );
-
-                matched.push(Command::LowPass {
-                    band,
-                    decimate,
-                    frequency,
-                })
-            }
-            "sparkfft" => {
-                let width = match map.remove("width") {
-                    Some(val) => val.parse()?,
-                    None => 128u32,
-                };
-
-                let stride = match map.remove("stride") {
-                    Some(val) => val.parse()?,
-                    None => u64::from(width),
-                };
-
-                let (min, max) = match map.remove("range") {
-                    Some(val) => {
-                        let (min, max) = val.split_at(val.find(':').ok_or_else(|| {
-                            format!("range argument must contain a ':': '{}'", val)
-                        })?);
-
-                        println!("{} {}", min, max);
-                        let min: f32 = min.parse()?;
-                        let max: f32 = max.chars().skip(1).collect::<String>().parse()?;
-
-                        (Some(min), Some(max))
-                    }
-                    None => (None, None),
-                };
-
-                ensure!(
-                    map.is_empty(),
-                    "invalid flags for 'sparkfft': {:?}",
-                    map.keys()
-                );
-
-                matched.push(Command::SparkFft {
-                    width,
-                    stride,
-                    min,
-                    max,
-                });
-            }
+        matched.push(match cmd.as_str() {
+            "from" => parse_from(&mut args, map)?,
+            "shift" => parse_shift(&mut args, map)?,
+            "lowpass" => parse_lowpass(&mut args, map)?,
+            "sparkfft" => parse_sparkfft(&mut args, map)?,
             other => bail!("unrecognised command: '{}'", other),
-        }
+        });
     }
 
     Ok(matched)
+}
+
+fn parse_from<'a, I: Iterator<Item = &'a String>>(
+    mut args: I,
+    mut map: HashMap<String, String>,
+) -> Result<Command> {
+    let filename = args.next().ok_or("'from' requires a filename argument")?;
+    let provided_sample_rate = map.remove("sr");
+    let provided_format = map.remove("format");
+    ensure!(map.is_empty(), "invalid flags for 'from': {:?}", map.keys());
+    let sample_rate = parse_si(
+        match provided_sample_rate {
+            Some(rate) => rate,
+            None => guess_sample_rate(filename)?,
+        }.as_str(),
+    )?;
+
+    let format = guess_from_extension(
+        match provided_format {
+            Some(fmt) => fmt.to_string(),
+            None => {
+                // EURGH
+                let ext_start = 1 +
+                    filename.rfind('.').ok_or_else(|| {
+                        format!("can't guess format as no extension: '{}'", filename)
+                    })?;
+                String::from_utf8(filename.bytes().skip(ext_start).collect()).unwrap()
+            }
+        }.as_str(),
+    )?;
+
+    Ok(Command::From {
+        sample_rate,
+        format,
+        filename: filename.to_string(),
+    })
+}
+
+fn parse_shift<'a, I: Iterator<Item = &'a String>>(
+    mut args: I,
+    map: HashMap<String, String>,
+) -> Result<Command> {
+    ensure!(map.is_empty(), "'shift' has no named arguments");
+    Ok(Command::Shift {
+        frequency: args.next()
+            .ok_or("'shift' requires a frequency argument")?
+            .parse()?,
+    })
+}
+
+fn parse_lowpass<'a, I: Iterator<Item = &'a String>>(
+    mut args: I,
+    mut map: HashMap<String, String>,
+) -> Result<Command> {
+    let frequency: u64 = parse_si(
+        args.next()
+            .ok_or("'lowpass' requires a frequency argument")?
+            .as_str(),
+    )?;
+
+    // TODO: much better defaults
+    let band = match map.remove("band") {
+        Some(val) => val.parse()?,
+        None => 0.1,
+    };
+
+    let decimate = match map.remove("decimate") {
+        Some(val) => val.parse()?,
+        None => 8,
+    };
+
+    ensure!(
+        map.is_empty(),
+        "invalid flags for 'lowpass': {:?}",
+        map.keys()
+    );
+
+    Ok(Command::LowPass {
+        band,
+        decimate,
+        frequency,
+    })
+}
+
+fn parse_sparkfft<'a, I: Iterator<Item = &'a String>>(
+    args: I,
+    mut map: HashMap<String, String>,
+) -> Result<Command> {
+    let width = match map.remove("width") {
+        Some(val) => val.parse()?,
+        None => 128u32,
+    };
+
+    let stride = match map.remove("stride") {
+        Some(val) => val.parse()?,
+        None => u64::from(width),
+    };
+
+    let (min, max) = match map.remove("range") {
+        Some(val) => {
+            let (min, max) = val.split_at(val.find(':').ok_or_else(|| {
+                format!("range argument must contain a ':': '{}'", val)
+            })?);
+
+            let min: f32 = min.parse()?;
+            let max: f32 = max.chars().skip(1).collect::<String>().parse()?;
+
+            (Some(min), Some(max))
+        }
+        None => (None, None),
+    };
+
+    ensure!(
+        map.is_empty(),
+        "invalid flags for 'sparkfft': {:?}",
+        map.keys()
+    );
+
+    Ok(Command::SparkFft {
+        width,
+        stride,
+        min,
+        max,
+    })
 }
 
 fn guess_sample_rate(filename: &str) -> Result<String> {
