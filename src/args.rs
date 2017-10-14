@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::collections::hash_map::Entry;
 use std::iter::Peekable;
 
 use regex::Regex;
@@ -28,10 +27,8 @@ pub enum Command {
         min: Option<f32>,
         max: Option<f32>,
     },
-    Write {
-        overwrite: bool,
-        prefix: String,
-    }
+    Write { overwrite: bool, prefix: String },
+    Gen { sample_rate: u64, cos: Vec<u64> },
 }
 
 pub fn parse<'a, I: Iterator<Item = &'a String>>(args: I) -> Result<Vec<Command>> {
@@ -42,11 +39,12 @@ pub fn parse<'a, I: Iterator<Item = &'a String>>(args: I) -> Result<Vec<Command>
         let map = read_just_args(cmd.as_str(), &mut args)?;
 
         matched.push(match cmd.as_str() {
-            "from" => parse_from(&mut args, map)?,
-            "shift" => parse_shift(&mut args, map)?,
-            "lowpass" => parse_lowpass(&mut args, map)?,
-            "sparkfft" => parse_sparkfft(&mut args, map)?,
-            "write" => parse_write(&mut args, map)?,
+            "from" => parse_from(&mut args, no_duplicates(map)?)?,
+            "shift" => parse_shift(&mut args, no_duplicates(map)?)?,
+            "lowpass" => parse_lowpass(&mut args, no_duplicates(map)?)?,
+            "sparkfft" => parse_sparkfft(&mut args, no_duplicates(map)?)?,
+            "write" => parse_write(&mut args, no_duplicates(map)?)?,
+            "gen" => parse_gen(&mut args, map)?,
             other => bail!("unrecognised command: '{}'", other),
         });
     }
@@ -193,7 +191,7 @@ fn parse_write<'a, I: Iterator<Item = &'a String>>(
 
     let overwrite = match map.remove("overwrite") {
         Some(val) => parse_bool(&val)?,
-        None => false
+        None => false,
     };
 
     ensure!(
@@ -202,12 +200,32 @@ fn parse_write<'a, I: Iterator<Item = &'a String>>(
         map.keys()
     );
 
-    let prefix: String = args.next().ok_or("'lowpass' requires a frequency argument")?.to_string();
+    let prefix: String = args.next()
+        .ok_or("'lowpass' requires a frequency argument")?
+        .to_string();
 
-    Ok(Command::Write {
-        overwrite,
-        prefix
-    })
+    Ok(Command::Write { overwrite, prefix })
+}
+
+fn parse_gen<'a, I: Iterator<Item = &'a String>>(
+    mut args: I,
+    mut map: HashMap<String, Vec<String>>,
+) -> Result<Command> {
+
+    let cos: Vec<u64> = match map.remove("cos") {
+        Some(val) => {
+            val.into_iter()
+                .map(|freq| parse_si_u64(&freq))
+                .collect::<Result<Vec<u64>>>()?
+        }
+        None => bail!("gen requires at least one operation"),
+    };
+
+    ensure!(map.is_empty(), "invalid flags for 'gen': {:?}", map.keys());
+
+    let sample_rate = parse_si_u64(args.next().ok_or("'gen' requires a sample rate argument")?)?;
+
+    Ok(Command::Gen { sample_rate, cos })
 }
 
 
@@ -271,10 +289,12 @@ fn parse_si_f64(from: &str) -> Result<f64> {
 fn parse_bool(from: &str) -> Result<bool> {
     match from.parse() {
         Ok(val) => Ok(val),
-        Err(_) => match from {
-            "yes" | "y" => Ok(true),
-            "no" | "n" => Ok(false),
-            other => bail!("unacceptable boolean value: '{}'", other)
+        Err(_) => {
+            match from {
+                "yes" | "y" => Ok(true),
+                "no" | "n" => Ok(false),
+                other => bail!("unacceptable boolean value: '{}'", other),
+            }
         }
     }
 }
@@ -292,7 +312,7 @@ fn guess_from_extension(ext: &str) -> Result<FileFormat> {
     })
 }
 
-fn read_just_args<'a, I>(cmd: &str, iter: &mut Peekable<I>) -> Result<HashMap<String, String>>
+fn read_just_args<'a, I>(cmd: &str, iter: &mut Peekable<I>) -> Result<HashMap<String, Vec<String>>>
 where
     I: Iterator<Item = &'a String>,
 {
@@ -301,8 +321,19 @@ where
     loop {
         // borrow checker :((
         if let Some(opt) = iter.peek() {
-            if opt.is_empty() || !opt.starts_with('-') {
+            if opt.is_empty() {
                 break;
+            }
+
+            if !opt.starts_with('-') {
+                break;
+            }
+
+            // it's a minus, so probably an option.. but is it a number?
+            if let Some(c) = opt.chars().nth(2) {
+                if c.is_digit(10) {
+                    break
+                }
             }
         } else {
             break;
@@ -318,22 +349,20 @@ where
             None => bail!("{} .. {} requires an argument", cmd, opt),
         };
 
-        match ret.entry(opt[1..].to_string()) {
-            Entry::Vacant(vacant) => {
-                vacant.insert(arg.to_string());
-            }
-            Entry::Occupied(entry) => {
-                bail!(
-                    "{} .. {} specified twice, once with '{}' and once with '{}'",
-                    cmd,
-                    opt,
-                    arg,
-                    entry.get()
-                )
-            }
-        }
+        ret.entry(opt[1..].to_string())
+            .or_insert_with(|| Vec::new())
+            .push(arg.to_string());
     }
 
+    Ok(ret)
+}
+
+fn no_duplicates(map: HashMap<String, Vec<String>>) -> Result<HashMap<String, String>> {
+    let mut ret = HashMap::with_capacity(map.len());
+    for (k, v) in map {
+        ensure!(1 == v.len(), "'-{}' specified more than once: {:?}", k, v);
+        ret.insert(k, v.into_iter().next().expect("len checked"));
+    }
     Ok(ret)
 }
 

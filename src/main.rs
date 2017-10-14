@@ -8,6 +8,9 @@ use std::env;
 use std::fs;
 use std::mem;
 
+use std::f64::consts::PI;
+const TAU: f64 = PI * 2.;
+
 use byteorder::ByteOrder;
 
 use rustfft::FFT;
@@ -18,6 +21,7 @@ use rustfft::num_traits::identities::Zero;
 mod args;
 mod errors;
 mod filter;
+mod gen;
 mod samples;
 mod shift;
 
@@ -48,6 +52,7 @@ fn usage(us: &str) {
     println!(" lowpass [-power 20] [-decimate 8] FREQUENCY \\");
     println!("sparkfft [-width 128] [-stride STRIDE] [-range LOW:HIGH] \\");
     println!("   write [-overwrite no] FILENAME_PREFIX \\");
+    println!("     gen [-cos FREQUENCY]* SAMPLE_RATE \\");
 
     println!();
     println!();
@@ -88,6 +93,9 @@ fn run() -> Result<()> {
                     sample_rate,
                 )))
             }
+            Gen { sample_rate, cos } => {
+                samples = Some(Box::new(gen::Gen::new(cos, sample_rate)))
+            },
             Shift { frequency } => {
                 let orig = samples.ok_or("shift requires an input")?;
                 let sample_rate = orig.sample_rate();
@@ -122,10 +130,12 @@ fn run() -> Result<()> {
                     max,
                 )?;
             }
-            Write {
-                overwrite, prefix
-            } => {
-                do_write(samples.as_mut().ok_or("write requires an input")?, overwrite, &prefix)?
+            Write { overwrite, prefix } => {
+                do_write(
+                    samples.as_mut().ok_or("write requires an input")?,
+                    overwrite,
+                    &prefix,
+                )?
             }
         }
     }
@@ -140,6 +150,8 @@ fn spark_fft(
     min: Option<f32>,
     max: Option<f32>,
 ) -> Result<()> {
+
+    println!("sparkfft sample_rate={}", samples.sample_rate());
 
     // TODO: super dumb:
     let min = min.unwrap_or(0.08);

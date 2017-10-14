@@ -1,10 +1,8 @@
-use std::f64::consts::PI;
+use TAU;
 
 use rustfft::num_complex::Complex;
 
 use samples::Samples;
-
-const TAU: f64 = PI * 2.;
 
 pub struct Shift<S> {
     inner: S,
