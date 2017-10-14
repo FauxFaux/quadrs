@@ -54,9 +54,11 @@ fn parse_from<'a, I: Iterator<Item = &'a String>>(
     mut map: HashMap<String, String>,
 ) -> Result<Command> {
     let filename = args.next().ok_or("'from' requires a filename argument")?;
+
     let provided_sample_rate = map.remove("sr");
     let provided_format = map.remove("format");
     ensure!(map.is_empty(), "invalid flags for 'from': {:?}", map.keys());
+
     let sample_rate = parse_si_u64(
         match provided_sample_rate {
             Some(rate) => rate,
@@ -89,7 +91,9 @@ fn parse_shift<'a, I: Iterator<Item = &'a String>>(
     mut args: I,
     map: HashMap<String, String>,
 ) -> Result<Command> {
+
     ensure!(map.is_empty(), "'shift' has no named arguments");
+
     Ok(Command::Shift {
         frequency: parse_si_i64(args.next().ok_or("'shift' requires a frequency argument")?)?,
     })
@@ -99,6 +103,7 @@ fn parse_lowpass<'a, I: Iterator<Item = &'a String>>(
     mut args: I,
     mut map: HashMap<String, String>,
 ) -> Result<Command> {
+
     let frequency: u64 = parse_si_u64(
         args.next()
             .ok_or("'lowpass' requires a frequency argument")?
@@ -133,6 +138,7 @@ fn parse_sparkfft<'a, I: Iterator<Item = &'a String>>(
     args: I,
     mut map: HashMap<String, String>,
 ) -> Result<Command> {
+
     let width = match map.remove("width") {
         Some(val) => usize_from(parse_si_u64(&val)?),
         None => 128,
