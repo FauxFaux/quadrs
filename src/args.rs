@@ -55,19 +55,7 @@ pub fn parse<'a, I: Iterator<Item = &'a String>>(args: I) -> Result<Vec<Command>
                 let sample_rate = parse_si(
                     match provided_sample_rate {
                         Some(rate) => rate,
-                        None => {
-                            Regex::new(r"\bsr([0-9]+[kMG]?)\b")?
-                                .find(filename.as_str())
-                                .ok_or_else(|| {
-                                    format!(
-                                        "can't guess sample rate from '{}', please provide it",
-                                        filename
-                                    )
-                                })?
-                                .as_str()
-                                [2..]
-                                .to_string()
-                        }
+                        None => guess_sample_rate(filename)?,
                     }.as_str(),
                 )?;
 
@@ -176,6 +164,22 @@ pub fn parse<'a, I: Iterator<Item = &'a String>>(args: I) -> Result<Vec<Command>
     }
 
     Ok(matched)
+}
+
+fn guess_sample_rate(filename: &str) -> Result<String> {
+    Ok(
+        Regex::new(r"\bsr([0-9]+[kMG]?)\b")?
+            .find(filename)
+            .ok_or_else(|| {
+                format!(
+                    "can't guess sample rate from '{}', please provide it",
+                    filename
+                )
+            })?
+            .as_str()
+            [2..]
+            .to_string(),
+    )
 }
 
 fn parse_si(from: &str) -> Result<u64> {
