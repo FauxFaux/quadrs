@@ -5,6 +5,8 @@ usage: quadrs \
    shift [-]FREQUENCY \
  lowpass [-power 20] [-decimate 8] FREQUENCY \
 sparkfft [-width 128] [-stride STRIDE] [-range LOW:HIGH]
+   write [-overwrite no] FILENAME_PREFIX \
+     gen [-cos FREQUENCY]* SAMPLE_RATE \
 
 
 Formats:
