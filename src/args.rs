@@ -115,7 +115,7 @@ pub fn parse<'a, I: Iterator<Item = &'a String>>(args: I) -> Result<Vec<Command>
 
                 let stride = match map.remove("stride") {
                     Some(val) => val.parse()?,
-                    None => width as u64,
+                    None => u64::from(width),
                 };
 
                 let (min, max) = match map.remove("range") {
