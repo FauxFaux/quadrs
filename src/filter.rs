@@ -41,8 +41,8 @@ where
     S: Samples,
 {
     fn len(&self) -> u64 {
-        // TODO: subtract edges?
-        self.inner.len() / self.decimate
+        assert!(self.inner.len() >= self.filter.len() as u64);
+        1 + (self.inner.len() - self.filter.len() as u64) / self.decimate
     }
 
     fn sample_rate(&self) -> u64 {
@@ -50,9 +50,20 @@ where
     }
 
     fn read_at(&mut self, off: u64, buf: &mut [Complex<f32>]) -> usize {
-        // TODO: this is total garbage
+        // This will only work well if we feed at least `self.filter.len()` extra
+        // samples in before we get to the data we want. We also have to discard samples after the
+        // end, and deal with decimation. Right.
 
-        let underlying_samples = buf.len().checked_mul(usize_from(self.decimate)).unwrap();
+        // decimate: 3
+        // len: 5
+        // input samples: 13
+        // underlying: 1bc2ef3hi4kl5
+        // output: f(1bc2e), f(2ef3h), f(3hi4k)
+        // lost: l, 5
+        // 13 - 5 = 8, 8 / 3 = 2
+        // 8 - 5 = 3, 3 / 3 = 1
+
+        let underlying_samples = buf.len() * usize_from(self.decimate) + self.filter.len();
         let mut raw_buf = vec![Complex::zero(); underlying_samples];
 
         let valid = self.inner.read_at(off * self.decimate, &mut raw_buf);
@@ -60,10 +71,10 @@ where
 
         assert_eq!(self.filter.len() / 2 - 1 + valid, convoluted.len());
 
-        let output_samples = usize_from(valid as u64 / self.decimate);
+        let output_samples = usize_from((valid - self.filter.len()) as u64 / self.decimate);
 
         for i in 0..output_samples {
-            buf[i] = convoluted[usize_from(i as u64 * self.decimate)];
+            buf[i] = convoluted[self.filter.len() + usize_from(i as u64 * self.decimate)];
         }
 
         output_samples
