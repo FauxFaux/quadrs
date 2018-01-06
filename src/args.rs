@@ -37,6 +37,7 @@ pub enum Command {
         sample_rate: u64,
         cos: Vec<u64>,
     },
+    Ui,
 }
 
 pub fn parse<'a, I: Iterator<Item = &'a String>>(args: I) -> Result<Vec<Command>> {
@@ -53,6 +54,7 @@ pub fn parse<'a, I: Iterator<Item = &'a String>>(args: I) -> Result<Vec<Command>
             "sparkfft" => parse_sparkfft(&mut args, no_duplicates(map)?)?,
             "write" => parse_write(&mut args, no_duplicates(map)?)?,
             "gen" => parse_gen(&mut args, map)?,
+            "ui" => Command::Ui,
             other => bail!("unrecognised command: '{}'", other),
         });
     }

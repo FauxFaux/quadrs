@@ -6,7 +6,13 @@ version = "0.1.0"
 [dependencies]
 byteorder = "1"
 error-chain = "0.11"
+image = "0.18"
 regex = "0.2"
 rustfft = "2"
+
+[dependencies.conrod]
+version = "0.57"
+features = ["glium", "winit"]
+
 [profile.release]
 lto = true

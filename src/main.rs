@@ -1,6 +1,9 @@
 extern crate byteorder;
 #[macro_use]
+extern crate conrod;
+#[macro_use]
 extern crate error_chain;
+extern crate image;
 extern crate regex;
 extern crate rustfft;
 
@@ -24,6 +27,7 @@ mod filter;
 mod gen;
 mod samples;
 mod shift;
+mod ui;
 
 use errors::*;
 use samples::Samples;
@@ -132,6 +136,7 @@ fn run() -> Result<()> {
                 overwrite,
                 &prefix,
             )?,
+            Ui => ui::display(),
         }
     }
 
