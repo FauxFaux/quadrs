@@ -15,7 +15,9 @@ pub enum Command {
         format: ::FileFormat,
         filename: String,
     },
-    Shift { frequency: i64 },
+    Shift {
+        frequency: i64,
+    },
     LowPass {
         size: usize,
         decimate: u64,
@@ -27,8 +29,14 @@ pub enum Command {
         min: Option<f32>,
         max: Option<f32>,
     },
-    Write { overwrite: bool, prefix: String },
-    Gen { sample_rate: u64, cos: Vec<u64> },
+    Write {
+        overwrite: bool,
+        prefix: String,
+    },
+    Gen {
+        sample_rate: u64,
+        cos: Vec<u64>,
+    },
 }
 
 pub fn parse<'a, I: Iterator<Item = &'a String>>(args: I) -> Result<Vec<Command>> {
@@ -74,8 +82,8 @@ fn parse_from<'a, I: Iterator<Item = &'a String>>(
             Some(fmt) => fmt.to_string(),
             None => {
                 // EURGH
-                let ext_start = 1 +
-                    filename.rfind('.').ok_or_else(|| {
+                let ext_start = 1
+                    + filename.rfind('.').ok_or_else(|| {
                         format!("can't guess format as no extension: '{}'", filename)
                     })?;
                 String::from_utf8(filename.bytes().skip(ext_start).collect()).unwrap()
@@ -94,7 +102,6 @@ fn parse_shift<'a, I: Iterator<Item = &'a String>>(
     mut args: I,
     map: HashMap<String, String>,
 ) -> Result<Command> {
-
     ensure!(map.is_empty(), "'shift' has no named arguments");
 
     Ok(Command::Shift {
@@ -106,7 +113,6 @@ fn parse_lowpass<'a, I: Iterator<Item = &'a String>>(
     mut args: I,
     mut map: HashMap<String, String>,
 ) -> Result<Command> {
-
     let frequency: u64 = parse_si_u64(
         args.next()
             .ok_or("'lowpass' requires a frequency argument")?
@@ -115,11 +121,9 @@ fn parse_lowpass<'a, I: Iterator<Item = &'a String>>(
 
     // TODO: much better defaults
     let size = match map.remove("power") {
-        Some(val) => {
-            usize_from(parse_si_u64(&val)?).checked_mul(2).ok_or(
-                "power is too large",
-            )?
-        }
+        Some(val) => usize_from(parse_si_u64(&val)?)
+            .checked_mul(2)
+            .ok_or("power is too large")?,
         None => 40,
     };
 
@@ -145,7 +149,6 @@ fn parse_sparkfft<'a, I: Iterator<Item = &'a String>>(
     args: I,
     mut map: HashMap<String, String>,
 ) -> Result<Command> {
-
     let width = match map.remove("width") {
         Some(val) => usize_from(parse_si_u64(&val)?),
         None => 128,
@@ -158,9 +161,8 @@ fn parse_sparkfft<'a, I: Iterator<Item = &'a String>>(
 
     let (min, max) = match map.remove("range") {
         Some(val) => {
-            let (min, max) = val.split_at(val.find(':').ok_or_else(|| {
-                format!("range argument must contain a ':': '{}'", val)
-            })?);
+            let (min, max) = val.split_at(val.find(':')
+                .ok_or_else(|| format!("range argument must contain a ':': '{}'", val))?);
 
             let min: f32 = min.parse()?;
             let max: f32 = max.chars().skip(1).collect::<String>().parse()?;
@@ -188,7 +190,6 @@ fn parse_write<'a, I: Iterator<Item = &'a String>>(
     mut args: I,
     mut map: HashMap<String, String>,
 ) -> Result<Command> {
-
     let overwrite = match map.remove("overwrite") {
         Some(val) => parse_bool(&val)?,
         None => false,
@@ -211,13 +212,10 @@ fn parse_gen<'a, I: Iterator<Item = &'a String>>(
     mut args: I,
     mut map: HashMap<String, Vec<String>>,
 ) -> Result<Command> {
-
     let cos: Vec<u64> = match map.remove("cos") {
-        Some(val) => {
-            val.into_iter()
-                .map(|freq| parse_si_u64(&freq))
-                .collect::<Result<Vec<u64>>>()?
-        }
+        Some(val) => val.into_iter()
+            .map(|freq| parse_si_u64(&freq))
+            .collect::<Result<Vec<u64>>>()?,
         None => bail!("gen requires at least one operation"),
     };
 
@@ -228,21 +226,17 @@ fn parse_gen<'a, I: Iterator<Item = &'a String>>(
     Ok(Command::Gen { sample_rate, cos })
 }
 
-
 fn guess_sample_rate(filename: &str) -> Result<String> {
-    Ok(
-        Regex::new(r"\bsr([0-9]+[kMG]?)\b")?
-            .find(filename)
-            .ok_or_else(|| {
-                format!(
-                    "can't guess sample rate from '{}', please provide it",
-                    filename
-                )
-            })?
-            .as_str()
-            [2..]
-            .to_string(),
-    )
+    Ok(Regex::new(r"\bsr([0-9]+[kMG]?)\b")?
+        .find(filename)
+        .ok_or_else(|| {
+            format!(
+                "can't guess sample rate from '{}', please provide it",
+                filename
+            )
+        })?
+        .as_str()[2..]
+        .to_string())
 }
 
 fn find_multiplication_suffix(from: &str) -> (&str, u32) {
@@ -267,17 +261,17 @@ fn find_multiplication_suffix(from: &str) -> (&str, u32) {
 fn parse_si_i64(from: &str) -> Result<i64> {
     let (val, mul) = find_multiplication_suffix(from);
     let parsed: i64 = val.parse()?;
-    Ok(parsed.checked_mul(i64::from(mul)).ok_or_else(|| {
-        format!("unit is out of range: {}", from)
-    })?)
+    Ok(parsed
+        .checked_mul(i64::from(mul))
+        .ok_or_else(|| format!("unit is out of range: {}", from))?)
 }
 
 fn parse_si_u64(from: &str) -> Result<u64> {
     let (val, mul) = find_multiplication_suffix(from);
     let parsed: u64 = val.parse()?;
-    Ok(parsed.checked_mul(u64::from(mul)).ok_or_else(|| {
-        format!("unit is out of range: {}", from)
-    })?)
+    Ok(parsed
+        .checked_mul(u64::from(mul))
+        .ok_or_else(|| format!("unit is out of range: {}", from))?)
 }
 
 fn parse_si_f64(from: &str) -> Result<f64> {
@@ -289,16 +283,13 @@ fn parse_si_f64(from: &str) -> Result<f64> {
 fn parse_bool(from: &str) -> Result<bool> {
     match from.parse() {
         Ok(val) => Ok(val),
-        Err(_) => {
-            match from {
-                "yes" | "y" => Ok(true),
-                "no" | "n" => Ok(false),
-                other => bail!("unacceptable boolean value: '{}'", other),
-            }
-        }
+        Err(_) => match from {
+            "yes" | "y" => Ok(true),
+            "no" | "n" => Ok(false),
+            other => bail!("unacceptable boolean value: '{}'", other),
+        },
     }
 }
-
 
 fn guess_from_extension(ext: &str) -> Result<FileFormat> {
     use FileFormat::*;
@@ -332,7 +323,7 @@ where
             // it's a minus, so probably an option.. but is it a number?
             if let Some(c) = opt.chars().nth(2) {
                 if c.is_digit(10) {
-                    break
+                    break;
                 }
             }
         } else {

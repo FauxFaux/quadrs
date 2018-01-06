@@ -87,14 +87,12 @@ fn lowpass_filter(cutoff: f32, size: usize) -> Vec<f32> {
     }
 
     let blackman_window = (0..size).map(|i| {
-        0.42 - 0.5 * (2.0 * PI * i as f32 / (size as f32 - 1.0)).cos() +
-            0.08 * (4.0 * PI * i as f32 / (size as f32 - 1.0)).cos()
+        0.42 - 0.5 * (2.0 * PI * i as f32 / (size as f32 - 1.0)).cos()
+            + 0.08 * (4.0 * PI * i as f32 / (size as f32 - 1.0)).cos()
     });
 
     let filter: Vec<f32> = (0..size)
-        .map(|i| {
-            sinc(2.0 * cutoff * (i as f32 - (size as f32 - 1.0) / 2.0))
-        })
+        .map(|i| sinc(2.0 * cutoff * (i as f32 - (size as f32 - 1.0) / 2.0)))
         .zip(blackman_window)
         .map(|(wave, window)| wave * window)
         .collect();

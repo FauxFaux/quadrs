@@ -70,7 +70,6 @@ fn run() -> Result<()> {
     let mut args = args.iter();
     let us = args.next().unwrap();
 
-
     let commands = args::parse(args)?;
     if commands.is_empty() {
         usage(us);
@@ -93,9 +92,7 @@ fn run() -> Result<()> {
                     sample_rate,
                 )))
             }
-            Gen { sample_rate, cos } => {
-                samples = Some(Box::new(gen::Gen::new(cos, sample_rate)))
-            },
+            Gen { sample_rate, cos } => samples = Some(Box::new(gen::Gen::new(cos, sample_rate))),
             Shift { frequency } => {
                 let orig = samples.ok_or("shift requires an input")?;
                 let sample_rate = orig.sample_rate();
@@ -130,13 +127,11 @@ fn run() -> Result<()> {
                     max,
                 )?;
             }
-            Write { overwrite, prefix } => {
-                do_write(
-                    samples.as_mut().ok_or("write requires an input")?,
-                    overwrite,
-                    &prefix,
-                )?
-            }
+            Write { overwrite, prefix } => do_write(
+                samples.as_mut().ok_or("write requires an input")?,
+                overwrite,
+                &prefix,
+            )?,
         }
     }
 
@@ -150,7 +145,6 @@ fn spark_fft(
     min: Option<f32>,
     max: Option<f32>,
 ) -> Result<()> {
-
     println!("sparkfft sample_rate={}", samples.sample_rate());
 
     // TODO: super dumb:
@@ -163,7 +157,6 @@ fn spark_fft(
 
     let mut i = 0;
     while i < (samples.len() - fft_width as u64) {
-
         let mut inp = vec![Complex::zero(); fft_width];
         samples.read_exact_at(i, &mut inp)?;
 
@@ -184,9 +177,9 @@ fn spark_fft(
 
         let distinction = (max - min) / (graph.len() as f32);
         let mut buf = String::with_capacity(fft_width);
-        for val in out.iter().skip(fft_width / 2).chain(
-            out.iter().take(fft_width / 2),
-        )
+        for val in out.iter()
+            .skip(fft_width / 2)
+            .chain(out.iter().take(fft_width / 2))
         {
             let norm = val.norm();
             if norm < min {
@@ -214,7 +207,6 @@ fn do_write(samples: &mut Samples, overwrite: bool, prefix: &str) -> Result<()> 
     use std::fs;
     use std::io;
     use byteorder::WriteBytesExt;
-
 
     let mut options = fs::OpenOptions::new();
     options.write(true);
@@ -259,9 +251,7 @@ impl FileFormat {
         assert_eq!(self.pair_bytes(), buf.len() as u64);
         Complex::new(
             self.to_f32(&buf[0..self.type_bytes() as usize]),
-            self.to_f32(
-                &buf[self.type_bytes() as usize..2 * self.type_bytes() as usize],
-            ),
+            self.to_f32(&buf[self.type_bytes() as usize..2 * self.type_bytes() as usize]),
         )
     }
 
