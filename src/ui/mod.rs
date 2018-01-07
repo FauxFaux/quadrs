@@ -3,6 +3,7 @@ use std;
 use conrod::{self, color, widget, Colorable, Positionable, Sizeable, Widget};
 use conrod::backend::glium::glium;
 use conrod::backend::glium::glium::Surface;
+use conrod::Borderable;
 
 use self::glium::texture::ClientFormat;
 use self::glium::texture::RawImage2d;
@@ -16,7 +17,7 @@ pub fn display() {
     // Build the window.
     let mut events_loop = glium::glutin::EventsLoop::new();
     let window = glium::glutin::WindowBuilder::new()
-        .with_title("Image Widget Demonstration")
+        .with_title("quadrs")
         .with_dimensions(WIDTH, HEIGHT);
     let context = glium::glutin::ContextBuilder::new()
         .with_vsync(true)
@@ -33,6 +34,7 @@ pub fn display() {
     // The `WidgetId` for our background and `Image` widgets.
     widget_ids!(struct Ids {
         background,
+        background_scrollbar,
         rust_logo,
         buttons,
     });
@@ -91,6 +93,7 @@ pub fn display() {
 
             widget::Canvas::new()
                 .top_left_with_margins(32. + 4., 0.)
+                .border(0.0f64)
                 .color(color::CHARCOAL)
                 .scroll_kids_vertically()
                 .set(ids.background, ui);
@@ -101,7 +104,10 @@ pub fn display() {
                 .color(color::LIGHT_BLUE)
                 .set(ids.buttons, ui);
 
-//            println!("{:?}", ui.kid_area_of(ids.background));
+            widget::Scrollbar::y_axis(ids.background)
+                .set(ids.background_scrollbar, ui);
+
+            //println!("{:?}", ui.kid_area_of(ids.background));
             widget::Image::new(gradient)
                 .w_h(w as f64, h as f64)
                 .middle_of(ids.background)
