@@ -4,6 +4,9 @@ use conrod::{self, color, widget, Colorable, Positionable, Sizeable, Widget};
 use conrod::backend::glium::glium;
 use conrod::backend::glium::glium::Surface;
 
+use self::glium::texture::ClientFormat;
+use self::glium::texture::RawImage2d;
+
 mod support;
 
 pub fn display() {
@@ -31,10 +34,23 @@ pub fn display() {
     widget_ids!(struct Ids { background, rust_logo });
     let ids = Ids::new(ui.widget_id_generator());
 
-    //let rust_logo = load_rust_logo(&display);
-    //let (w, h) = (rust_logo.get_width(), rust_logo.get_height().unwrap());
+    let (w, h) = (128, 4000);
+    let mut datums = vec![192u8; (w * h) as usize];
+    for i in 0..h {
+        for j in 0..w {
+            datums[(j + (i * w)) as usize] = (256. * (i as f32 / h as f32)) as u8;
+        }
+    }
+
+    let rust_logo = RawImage2d {
+        data: datums.into(),
+        width: w,
+        height: h,
+        format: ClientFormat::U8,
+    };
+    let rust_logo = glium::texture::Texture2d::new(&display, rust_logo).unwrap();
     let mut image_map = conrod::image::Map::<glium::texture::Texture2d>::new();
-    //let rust_logo = image_map.insert(rust_logo);
+    let gradient = image_map.insert(rust_logo);
 
     // Poll events from the window.
     let mut event_loop = support::EventLoop::new();
@@ -68,11 +84,12 @@ pub fn display() {
         {
             let ui = &mut ui.set_widgets();
             // Draw a light blue background.
-            widget::Canvas::new()
+            let canvas = widget::Canvas::new()
                 .color(color::LIGHT_BLUE)
+                .pad(0.)
                 .set(ids.background, ui);
             // Instantiate the `Image` at its full size in the middle of the window.
-            //widget::Image::new(rust_logo).w_h(w as f64, h as f64).middle().set(ids.rust_logo, ui);
+            widget::Image::new(gradient).w_h(w as f64, h as f64).middle().set(ids.rust_logo, ui);
         }
 
         // Render the `Ui` and then display it on the screen.
