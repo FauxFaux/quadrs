@@ -31,14 +31,19 @@ pub fn display() {
     let mut renderer = conrod::backend::glium::Renderer::new(&display).unwrap();
 
     // The `WidgetId` for our background and `Image` widgets.
-    widget_ids!(struct Ids { background, rust_logo });
+    widget_ids!(struct Ids {
+        background,
+        rust_logo,
+        buttons,
+    });
     let ids = Ids::new(ui.widget_id_generator());
 
-    let (w, h) = (128, 4000);
-    let mut datums = vec![192u8; (w * h) as usize];
+    let (w, h) = (128, 2000);
+    let mut datums = vec![(0u8, 0u8, 0u8); (w * h) as usize];
     for i in 0..h {
         for j in 0..w {
-            datums[(j + (i * w)) as usize] = (256. * (i as f32 / h as f32)) as u8;
+            let val = (256. * (i as f32 / h as f32)) as u8;
+            datums[(j + (i * w)) as usize] = (val, val, val);
         }
     }
 
@@ -46,7 +51,7 @@ pub fn display() {
         data: datums.into(),
         width: w,
         height: h,
-        format: ClientFormat::U8,
+        format: ClientFormat::U8U8U8,
     };
     let rust_logo = glium::texture::Texture2d::new(&display, rust_logo).unwrap();
     let mut image_map = conrod::image::Map::<glium::texture::Texture2d>::new();
@@ -83,13 +88,24 @@ pub fn display() {
         // Instantiate the widgets.
         {
             let ui = &mut ui.set_widgets();
-            // Draw a light blue background.
-            let canvas = widget::Canvas::new()
-                .color(color::LIGHT_BLUE)
-                .pad(0.)
+
+            widget::Canvas::new()
+                .top_left_with_margins(32. + 4., 0.)
+                .color(color::CHARCOAL)
+                .scroll_kids_vertically()
                 .set(ids.background, ui);
-            // Instantiate the `Image` at its full size in the middle of the window.
-            widget::Image::new(gradient).w_h(w as f64, h as f64).middle().set(ids.rust_logo, ui);
+
+            widget::Canvas::new()
+                .top_left()
+                .h(32. + 4.)
+                .color(color::LIGHT_BLUE)
+                .set(ids.buttons, ui);
+
+//            println!("{:?}", ui.kid_area_of(ids.background));
+            widget::Image::new(gradient)
+                .w_h(w as f64, h as f64)
+                .middle_of(ids.background)
+                .set(ids.rust_logo, ui);
         }
 
         // Render the `Ui` and then display it on the screen.
