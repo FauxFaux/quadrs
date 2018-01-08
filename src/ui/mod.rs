@@ -1,7 +1,17 @@
-use conrod::{self, color, widget, Colorable, Positionable, Sizeable, Widget};
+use conrod;
+use conrod::color;
+use conrod::text;
+use conrod::widget;
+
+use conrod::Borderable;
+use conrod::Colorable;
+use conrod::Labelable;
+use conrod::Positionable;
+use conrod::Sizeable;
+use conrod::Widget;
+
 use conrod::backend::glium::glium;
 use conrod::backend::glium::glium::Surface;
-use conrod::Borderable;
 
 use self::glium::texture::ClientFormat;
 use self::glium::texture::RawImage2d;
@@ -31,6 +41,11 @@ pub fn display(samples: &mut Samples) -> Result<()> {
 
     // construct our `Ui`.
     let mut ui = conrod::UiBuilder::new([WIDTH as f64, HEIGHT as f64]).build();
+    ui.fonts.insert(
+        text::FontCollection::from_bytes(&include_bytes!("../../assets/NotoSans-Regular.ttf")[..])
+            .into_font()
+            .unwrap(),
+    );
 
     // A type used for converting `conrod::render::Primitives` into `Command`s that can be used
     // for drawing to the glium `Surface`.
@@ -38,10 +53,12 @@ pub fn display(samples: &mut Samples) -> Result<()> {
 
     // The `WidgetId` for our background and `Image` widgets.
     widget_ids!(struct Ids {
+        root,
         background,
         background_scrollbar,
         canvas,
         buttons,
+        oop,
     });
     let ids = Ids::new(ui.widget_id_generator());
 
@@ -83,10 +100,29 @@ pub fn display(samples: &mut Samples) -> Result<()> {
             let ui = &mut ui.set_widgets();
 
             widget::Canvas::new()
-                .top_left()
-                .border(0.0f64)
-                .color(color::CHARCOAL)
-                .set(ids.background, ui);
+                .flow_down(&[
+                    (
+                        ids.buttons,
+                        widget::Canvas::new()
+                            .length(32. + 4.)
+                            .color(color::LIGHT_BLUE)
+                            .pad(2.),
+                    ),
+                    (
+                        ids.background,
+                        widget::Canvas::new().border(0.0f64).color(color::CHARCOAL),
+                    ),
+                ])
+                .set(ids.root, ui);
+
+            for _ in widget::Button::new()
+                .label("PRESS ME")
+                .mid_left_of(ids.buttons)
+                .w_h(128., 32.)
+                .set(ids.oop, ui)
+            {
+                println!("beep");
+            }
 
             widget::Scrollbar::y_axis(ids.background).set(ids.background_scrollbar, ui);
 
