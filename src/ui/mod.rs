@@ -25,6 +25,15 @@ use samples::Samples;
 
 mod support;
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+struct Params {
+    width: u32,
+    height: u32,
+    fft_width: usize,
+    stride: u64,
+    stretch: isize,
+}
+
 pub fn display(samples: &mut Samples) -> Result<()> {
     const WIDTH: u32 = 800;
     const HEIGHT: u32 = 600;
@@ -59,15 +68,23 @@ pub fn display(samples: &mut Samples) -> Result<()> {
         canvas,
         buttons,
         fft_up,
+        fft_label,
         fft_down,
     });
     let ids = Ids::new(ui.widget_id_generator());
 
-    let mut prev_dims = (0, 0);
+    let mut params = Params {
+        width: 0,
+        height: 0,
+        stride: 1,
+        fft_width: 8,
+        stretch: 4,
+    };
+
+    let mut prev_params = params;
 
     let mut image_map = conrod::image::Map::<glium::texture::Texture2d>::new();
     let mut canvas_img = None;
-    let mut fft_width = 8;
 
     // Poll events from the window.
     let mut event_loop = support::EventLoop::new();
@@ -97,6 +114,10 @@ pub fn display(samples: &mut Samples) -> Result<()> {
             }
         }
 
+        const BUTTON_HEIGHT: f64 = 32.;
+        const BUTTON_PAD: f64 = 4.;
+        const BUTTON_PLUS_MINUS_WIDTH: f64 = 32.;
+
         // Instantiate the widgets.
         {
             let ui = &mut ui.set_widgets();
@@ -106,9 +127,9 @@ pub fn display(samples: &mut Samples) -> Result<()> {
                     (
                         ids.buttons,
                         widget::Canvas::new()
-                            .length(32. + 4.)
+                            .length(BUTTON_HEIGHT + BUTTON_PAD + BUTTON_PAD)
                             .color(color::LIGHT_BLUE)
-                            .pad(2.),
+                            .pad(BUTTON_PAD),
                     ),
                     (
                         ids.background,
@@ -118,31 +139,43 @@ pub fn display(samples: &mut Samples) -> Result<()> {
                 .set(ids.root, ui);
 
             for _ in widget::Button::new()
-                .label("fft+")
+                .label("+")
                 .mid_left_of(ids.buttons)
-                .w_h(128., 32.)
+                .w_h(BUTTON_PLUS_MINUS_WIDTH, BUTTON_HEIGHT)
                 .set(ids.fft_up, ui)
             {
-                fft_width *= 2;
+                params.fft_width *= 2;
+                event_loop.needs_update();
             }
 
             for _ in widget::Button::new()
-                .label("fft-")
+                .label("-")
                 .mid_left_of(ids.buttons)
-                .w_h(128., 32.)
-                .right_from(ids.fft_up, 2.)
+                .w_h(BUTTON_PLUS_MINUS_WIDTH, BUTTON_HEIGHT)
+                .right_from(ids.fft_up, BUTTON_PAD)
                 .set(ids.fft_down, ui)
             {
-                fft_width /= 2;
+                if params.fft_width > 2 {
+                    params.fft_width /= 2;
+                    event_loop.needs_update();
+                }
             }
+
+            widget::Text::new(&format!("fft: {}", params.fft_width))
+                .mid_left_of(ids.buttons)
+                .right_from(ids.fft_down, BUTTON_PAD)
+                .w(64.)
+                .set(ids.fft_label, ui);
 
             widget::Scrollbar::y_axis(ids.background).set(ids.background_scrollbar, ui);
 
             if let Some((_, _, w, h)) = ui.kid_area_of(ids.background).map(|r| r.x_y_w_h()) {
                 let w = w as u32;
                 let h = h as u32;
-                if (w, h) != prev_dims || canvas_img.is_none() {
-                    let datums = render(samples, w, h, fft_width)?;
+                params.width = w;
+                params.height = h;
+                if params != prev_params || canvas_img.is_none() {
+                    let datums = render(samples, &params)?;
                     let img = RawImage2d {
                         data: datums.into(),
                         width: w as u32,
@@ -151,7 +184,7 @@ pub fn display(samples: &mut Samples) -> Result<()> {
                     };
                     let img = glium::texture::Texture2d::new(&display, img).unwrap();
 
-                    prev_dims = (w, h);
+                    prev_params = params;
 
                     if let Some(id) = canvas_img {
                         image_map.replace(id, img);
@@ -196,13 +229,11 @@ impl MemImage {
     }
 }
 
-fn render(samples: &mut Samples, w: u32, h: u32, fft_width: usize) -> Result<Vec<(u8, u8, u8)>> {
-    let w = w as usize;
-    let h = h as usize;
+fn render(samples: &mut Samples, params: &Params) -> Result<Vec<(u8, u8, u8)>> {
+    let w = params.width as usize;
+    let h = params.height as usize;
 
-    let stride = 1;
-
-    ensure!(w > fft_width, "TODO: window too narrow");
+    ensure!(w > params.fft_width, "TODO: window too narrow");
 
     let mut target = MemImage {
         data: vec![(0u8, 0u8, 0u8); w * h],
@@ -210,7 +241,7 @@ fn render(samples: &mut Samples, w: u32, h: u32, fft_width: usize) -> Result<Vec
         height: h,
     };
 
-    let fft = Radix4::<f32>::new(fft_width, false);
+    let fft = Radix4::<f32>::new(params.fft_width, false);
 
     let stretch = 16;
 
@@ -218,12 +249,12 @@ fn render(samples: &mut Samples, w: u32, h: u32, fft_width: usize) -> Result<Vec
     let mut ox = 0;
     let mut row = 0;
 
-    let row_height = stretch * fft_width + 16;
+    let row_height = stretch * params.fft_width + 16;
 
     let mut min = 99.0;
     let mut max = 0.0;
 
-    let samples_available = samples.len() - fft_width as u64;
+    let samples_available = samples.len() - params.fft_width as u64;
     while sample_pos < samples_available {
         let out = fft_at(&fft, samples, sample_pos)?;
 
@@ -234,8 +265,8 @@ fn render(samples: &mut Samples, w: u32, h: u32, fft_width: usize) -> Result<Vec
         }
 
         for (o, v) in out.iter()
-            .skip(fft_width / 2)
-            .chain(out.iter().take(fft_width / 2))
+            .skip(params.fft_width / 2)
+            .chain(out.iter().take(params.fft_width / 2))
             .enumerate()
         {
             use palette::RgbHue;
@@ -274,7 +305,7 @@ fn render(samples: &mut Samples, w: u32, h: u32, fft_width: usize) -> Result<Vec
             ox = 0;
             row += 1;
         }
-        sample_pos += stride;
+        sample_pos += params.stride;
     }
 
     println!("{} {}", min, max);
