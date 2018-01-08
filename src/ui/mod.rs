@@ -58,7 +58,8 @@ pub fn display(samples: &mut Samples) -> Result<()> {
         background_scrollbar,
         canvas,
         buttons,
-        oop,
+        fft_up,
+        fft_down,
     });
     let ids = Ids::new(ui.widget_id_generator());
 
@@ -66,6 +67,7 @@ pub fn display(samples: &mut Samples) -> Result<()> {
 
     let mut image_map = conrod::image::Map::<glium::texture::Texture2d>::new();
     let mut canvas_img = None;
+    let mut fft_width = 8;
 
     // Poll events from the window.
     let mut event_loop = support::EventLoop::new();
@@ -116,12 +118,22 @@ pub fn display(samples: &mut Samples) -> Result<()> {
                 .set(ids.root, ui);
 
             for _ in widget::Button::new()
-                .label("PRESS ME")
+                .label("fft+")
                 .mid_left_of(ids.buttons)
                 .w_h(128., 32.)
-                .set(ids.oop, ui)
+                .set(ids.fft_up, ui)
             {
-                println!("beep");
+                fft_width *= 2;
+            }
+
+            for _ in widget::Button::new()
+                .label("fft-")
+                .mid_left_of(ids.buttons)
+                .w_h(128., 32.)
+                .right_from(ids.fft_up, 2.)
+                .set(ids.fft_down, ui)
+            {
+                fft_width /= 2;
             }
 
             widget::Scrollbar::y_axis(ids.background).set(ids.background_scrollbar, ui);
@@ -130,7 +142,7 @@ pub fn display(samples: &mut Samples) -> Result<()> {
                 let w = w as u32;
                 let h = h as u32;
                 if (w, h) != prev_dims || canvas_img.is_none() {
-                    let datums = render(samples, w, h)?;
+                    let datums = render(samples, w, h, fft_width)?;
                     let img = RawImage2d {
                         data: datums.into(),
                         width: w as u32,
@@ -184,12 +196,11 @@ impl MemImage {
     }
 }
 
-fn render(samples: &mut Samples, w: u32, h: u32) -> Result<Vec<(u8, u8, u8)>> {
+fn render(samples: &mut Samples, w: u32, h: u32, fft_width: usize) -> Result<Vec<(u8, u8, u8)>> {
     let w = w as usize;
     let h = h as usize;
 
     let stride = 1;
-    let fft_width = 8;
 
     ensure!(w > fft_width, "TODO: window too narrow");
 
