@@ -164,6 +164,8 @@ fn render(samples: &mut Samples, w: u32, h: u32) -> Result<Vec<(u8, u8, u8)>> {
 
     let fft = Radix4::<f32>::new(fft_width as usize, false);
 
+    let stretch = 16;
+
     let mut sample_pos = 0;
     let mut oh = 0;
     let samples_available = samples.len() - fft_width as u64;
@@ -176,7 +178,9 @@ fn render(samples: &mut Samples, w: u32, h: u32) -> Result<Vec<(u8, u8, u8)>> {
             .enumerate()
         {
             let v = (v.norm() / 10.0 * 256.0) as u8;
-            target.set(o, oh, (v, v, v));
+            for off in 0..stretch {
+                target.set(o * stretch + off, oh, (v, v, v));
+            }
         }
 
         oh += 1;
