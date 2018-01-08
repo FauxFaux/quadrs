@@ -70,6 +70,12 @@ pub fn display(samples: &mut Samples) -> Result<()> {
         fft_up,
         fft_label,
         fft_down,
+        stretch_up,
+        stretch_label,
+        stretch_down,
+        stride_up,
+        stride_label,
+        stride_down,
     });
     let ids = Ids::new(ui.widget_id_generator());
 
@@ -114,7 +120,7 @@ pub fn display(samples: &mut Samples) -> Result<()> {
             }
         }
 
-        const BUTTON_HEIGHT: f64 = 32.;
+        const BUTTON_HEIGHT: f64 = 28.;
         const BUTTON_PAD: f64 = 4.;
         const BUTTON_PLUS_MINUS_WIDTH: f64 = 32.;
 
@@ -166,6 +172,64 @@ pub fn display(samples: &mut Samples) -> Result<()> {
                 .right_from(ids.fft_down, BUTTON_PAD)
                 .w(64.)
                 .set(ids.fft_label, ui);
+
+            for _ in widget::Button::new()
+                .label("+")
+                .mid_left_of(ids.buttons)
+                .w_h(BUTTON_PLUS_MINUS_WIDTH, BUTTON_HEIGHT)
+                .right_from(ids.fft_label, BUTTON_PAD)
+                .set(ids.stretch_up, ui)
+            {
+                params.stretch += 1;
+                event_loop.needs_update();
+            }
+
+            for _ in widget::Button::new()
+                .label("-")
+                .mid_left_of(ids.buttons)
+                .w_h(BUTTON_PLUS_MINUS_WIDTH, BUTTON_HEIGHT)
+                .right_from(ids.stretch_up, BUTTON_PAD)
+                .set(ids.stretch_down, ui)
+            {
+                params.stretch -= 1;
+                event_loop.needs_update();
+            }
+
+            widget::Text::new(&format!("stretch: {}", params.stretch))
+                .mid_left_of(ids.buttons)
+                .right_from(ids.stretch_down, BUTTON_PAD)
+                .w(128.)
+                .set(ids.stretch_label, ui);
+
+            for _ in widget::Button::new()
+                .label("+")
+                .mid_left_of(ids.buttons)
+                .w_h(BUTTON_PLUS_MINUS_WIDTH, BUTTON_HEIGHT)
+                .right_from(ids.stretch_label, BUTTON_PAD)
+                .set(ids.stride_up, ui)
+            {
+                params.stride += 1;
+                event_loop.needs_update();
+            }
+
+            for _ in widget::Button::new()
+                .label("-")
+                .mid_left_of(ids.buttons)
+                .w_h(BUTTON_PLUS_MINUS_WIDTH, BUTTON_HEIGHT)
+                .right_from(ids.stride_up, BUTTON_PAD)
+                .set(ids.stride_down, ui)
+            {
+                if params.stride > 1 {
+                    params.stride -= 1;
+                    event_loop.needs_update();
+                }
+            }
+
+            widget::Text::new(&format!("stride: {}", params.stride))
+                .mid_left_of(ids.buttons)
+                .right_from(ids.stride_down, BUTTON_PAD)
+                .w(128.)
+                .set(ids.stride_label, ui);
 
             widget::Scrollbar::y_axis(ids.background).set(ids.background_scrollbar, ui);
 
@@ -243,7 +307,8 @@ fn render(samples: &mut Samples, params: &Params) -> Result<Vec<(u8, u8, u8)>> {
 
     let fft = Radix4::<f32>::new(params.fft_width, false);
 
-    let stretch = 16;
+    assert!(params.stretch > 0, "TODO: negative stretching");
+    let stretch = params.stretch as usize;
 
     let mut sample_pos = 0;
     let mut ox = 0;
