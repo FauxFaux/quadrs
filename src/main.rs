@@ -4,6 +4,7 @@ extern crate conrod;
 #[macro_use]
 extern crate error_chain;
 extern crate image;
+extern crate palette;
 extern crate regex;
 extern crate rustfft;
 

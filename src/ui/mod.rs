@@ -6,6 +6,7 @@ use conrod::Borderable;
 use self::glium::texture::ClientFormat;
 use self::glium::texture::RawImage2d;
 
+use palette;
 use rustfft::algorithm::Radix4;
 use rustfft::num_complex::Complex;
 
@@ -172,6 +173,9 @@ fn render(samples: &mut Samples, w: u32, h: u32) -> Result<Vec<(u8, u8, u8)>> {
 
     let row_height = stretch * fft_width + 16;
 
+    let mut min = 99.0;
+    let mut max = 0.0;
+
     let samples_available = samples.len() - fft_width as u64;
     while sample_pos < samples_available {
         let out = fft_at(&fft, samples, sample_pos)?;
@@ -187,13 +191,34 @@ fn render(samples: &mut Samples, w: u32, h: u32) -> Result<Vec<(u8, u8, u8)>> {
             .chain(out.iter().take(fft_width / 2))
             .enumerate()
         {
-            let v = (v.norm() / 10.0 * 256.0) as u8;
+            use palette::RgbHue;
+            //let v = (v.norm() / 10.0 * 256.0) as u8;
+            let scaled = v.norm() / 2.29;
+            if scaled < min {
+                min = scaled;
+            }
+            if scaled > max {
+                max = scaled;
+            }
+
+            let scaled = 1.0 - scaled;
+
+            let rgb = palette::Rgb::from(palette::Hsv::new(
+                RgbHue::from(scaled * 0.8 * 360.0),
+                1.0,
+                1.0 - scaled,
+            ));
+            let v = (
+                (rgb.red * 256.0) as u8,
+                (rgb.green * 256.0) as u8,
+                (rgb.blue * 256.0) as u8,
+            );
             for off in 0..stretch {
                 let y = oy + o * stretch + off;
                 if y >= h {
                     continue;
                 }
-                target.set(ox, y, (v, v, v));
+                target.set(ox, y, v);
             }
         }
 
@@ -204,6 +229,8 @@ fn render(samples: &mut Samples, w: u32, h: u32) -> Result<Vec<(u8, u8, u8)>> {
         }
         sample_pos += stride;
     }
+
+    println!("{} {}", min, max);
 
     Ok(target.data)
 }
