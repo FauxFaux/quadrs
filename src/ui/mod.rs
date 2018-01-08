@@ -1,5 +1,3 @@
-use std::mem;
-
 use conrod::{self, color, widget, Colorable, Positionable, Sizeable, Widget};
 use conrod::backend::glium::glium;
 use conrod::backend::glium::glium::Surface;
@@ -7,6 +5,9 @@ use conrod::Borderable;
 
 use self::glium::texture::ClientFormat;
 use self::glium::texture::RawImage2d;
+
+use rustfft::algorithm::Radix4;
+use rustfft::num_complex::Complex;
 
 use errors::*;
 use samples::Samples;
@@ -130,12 +131,23 @@ pub fn display(samples: &mut Samples) -> Result<()> {
     Ok(())
 }
 
-fn render(samples: &mut Samples, w: u32, h: u32) -> Result<Vec<(u8, u8, u8)>> {
-    use rustfft::FFT;
-    use rustfft::algorithm::Radix4;
-    use rustfft::num_complex::Complex;
-    use rustfft::num_traits::identities::Zero;
+struct MemImage {
+    data: Vec<(u8, u8, u8)>,
+    width: usize,
+    height: usize,
+}
 
+impl MemImage {
+    #[inline]
+    fn set(&mut self, x: usize, y: usize, val: (u8, u8, u8)) {
+        assert!(x < self.width);
+        assert!(y < self.height);
+
+        self.data[(self.height - y - 1) * self.width + x] = val;
+    }
+}
+
+fn render(samples: &mut Samples, w: u32, h: u32) -> Result<Vec<(u8, u8, u8)>> {
     let w = w as usize;
     let h = h as usize;
 
@@ -144,20 +156,19 @@ fn render(samples: &mut Samples, w: u32, h: u32) -> Result<Vec<(u8, u8, u8)>> {
 
     ensure!(w > fft_width, "TODO: window too narrow");
 
-    let mut datums = vec![(0u8, 0u8, 0u8); w * h];
+    let mut target = MemImage {
+        data: vec![(0u8, 0u8, 0u8); w * h],
+        width: w,
+        height: h,
+    };
 
-    let fft = Radix4::new(fft_width as usize, false);
+    let fft = Radix4::<f32>::new(fft_width as usize, false);
 
-    let mut i = 0;
+    let mut sample_pos = 0;
     let mut oh = 0;
-    while i < (samples.len() - fft_width as u64) && oh < h {
-        let mut inp = vec![Complex::zero(); fft_width];
-        samples.read_exact_at(i, &mut inp)?;
-
-        let mut out = vec![Complex::zero(); fft_width];
-
-        fft.process(&mut inp, &mut out);
-        mem::drop(inp); // inp is now junk
+    let samples_available = samples.len() - fft_width as u64;
+    while sample_pos < samples_available && oh < h {
+        let out = fft_at(&fft, samples, sample_pos)?;
 
         for (o, v) in out.iter()
             .skip(fft_width / 2)
@@ -165,12 +176,29 @@ fn render(samples: &mut Samples, w: u32, h: u32) -> Result<Vec<(u8, u8, u8)>> {
             .enumerate()
         {
             let v = (v.norm() / 10.0 * 256.0) as u8;
-            datums[oh * w + o] = (v, v, v);
+            target.set(o, oh, (v, v, v));
         }
 
         oh += 1;
-        i += stride;
+        sample_pos += stride;
     }
 
-    Ok(datums)
+    Ok(target.data)
+}
+
+#[inline]
+fn fft_at(fft: &Radix4<f32>, samples: &mut Samples, sample_pos: u64) -> Result<Vec<Complex<f32>>> {
+    use rustfft::FFT;
+    use rustfft::Length;
+    use rustfft::num_traits::identities::Zero;
+
+    let fft_width = fft.len();
+    let mut out = vec![Complex::zero(); fft_width];
+    {
+        let mut inp = vec![Complex::zero(); fft_width];
+        samples.read_exact_at(sample_pos, &mut inp)?;
+        fft.process(&mut inp, &mut out);
+    }
+
+    Ok(out)
 }
