@@ -1,4 +1,4 @@
-use std;
+use std::mem;
 
 use conrod::{self, color, widget, Colorable, Positionable, Sizeable, Widget};
 use conrod::backend::glium::glium;
@@ -8,11 +8,12 @@ use conrod::Borderable;
 use self::glium::texture::ClientFormat;
 use self::glium::texture::RawImage2d;
 
+use errors::*;
 use samples::Samples;
 
 mod support;
 
-pub fn display(samples: &mut Samples) {
+pub fn display(samples: &mut Samples) -> Result<()> {
     const WIDTH: u32 = 800;
     const HEIGHT: u32 = 600;
 
@@ -91,7 +92,7 @@ pub fn display(samples: &mut Samples) {
                 let w = w as u32;
                 let h = h as u32;
                 if (w, h) != prev_dims || canvas_img.is_none() {
-                    let datums = render(samples, w, h);
+                    let datums = render(samples, w, h)?;
                     let img = RawImage2d {
                         data: datums.into(),
                         width: w as u32,
@@ -125,18 +126,51 @@ pub fn display(samples: &mut Samples) {
             target.finish().unwrap();
         }
     }
+
+    Ok(())
 }
 
-fn render(samples: &mut Samples, w: u32, h: u32) -> Vec<(u8, u8, u8)> {
+fn render(samples: &mut Samples, w: u32, h: u32) -> Result<Vec<(u8, u8, u8)>> {
+    use rustfft::FFT;
+    use rustfft::algorithm::Radix4;
+    use rustfft::num_complex::Complex;
+    use rustfft::num_traits::identities::Zero;
+
     let w = w as usize;
     let h = h as usize;
 
+    let stride = 4;
+    let fft_width = 16;
+
+    ensure!(w > fft_width, "TODO: window too narrow");
+
     let mut datums = vec![(0u8, 0u8, 0u8); w * h];
-    for i in 0..h {
-        for j in 0..w {
-            let val = (256. * (i as f32 / h as f32)) as u8;
-            datums[j + (i * w)] = (val, val, val);
+
+    let fft = Radix4::new(fft_width as usize, false);
+
+    let mut i = 0;
+    let mut oh = 0;
+    while i < (samples.len() - fft_width as u64) && oh < h {
+        let mut inp = vec![Complex::zero(); fft_width];
+        samples.read_exact_at(i, &mut inp)?;
+
+        let mut out = vec![Complex::zero(); fft_width];
+
+        fft.process(&mut inp, &mut out);
+        mem::drop(inp); // inp is now junk
+
+        for (o, v) in out.iter()
+            .skip(fft_width / 2)
+            .chain(out.iter().take(fft_width / 2))
+            .enumerate()
+        {
+            let v = (v.norm() / 10.0 * 256.0) as u8;
+            datums[oh * w + o] = (v, v, v);
         }
+
+        oh += 1;
+        i += stride;
     }
-    datums
+
+    Ok(datums)
 }
