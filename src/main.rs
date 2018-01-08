@@ -136,7 +136,7 @@ fn run() -> Result<()> {
                 overwrite,
                 &prefix,
             )?,
-            Ui => ui::display(),
+            Ui => ui::display(samples.as_mut().ok_or("ui requires an input FOR NOW")?),
         }
     }
 

@@ -8,9 +8,11 @@ use conrod::Borderable;
 use self::glium::texture::ClientFormat;
 use self::glium::texture::RawImage2d;
 
+use samples::Samples;
+
 mod support;
 
-pub fn display() {
+pub fn display(samples: &mut Samples) {
     const WIDTH: u32 = 800;
     const HEIGHT: u32 = 600;
 
@@ -35,29 +37,15 @@ pub fn display() {
     widget_ids!(struct Ids {
         background,
         background_scrollbar,
-        rust_logo,
+        canvas,
         buttons,
     });
     let ids = Ids::new(ui.widget_id_generator());
 
-    let (w, h) = (128, 2000);
-    let mut datums = vec![(0u8, 0u8, 0u8); (w * h) as usize];
-    for i in 0..h {
-        for j in 0..w {
-            let val = (256. * (i as f32 / h as f32)) as u8;
-            datums[(j + (i * w)) as usize] = (val, val, val);
-        }
-    }
+    let mut prev_dims = (0, 0);
 
-    let rust_logo = RawImage2d {
-        data: datums.into(),
-        width: w,
-        height: h,
-        format: ClientFormat::U8U8U8,
-    };
-    let rust_logo = glium::texture::Texture2d::new(&display, rust_logo).unwrap();
     let mut image_map = conrod::image::Map::<glium::texture::Texture2d>::new();
-    let gradient = image_map.insert(rust_logo);
+    let mut canvas_img = None;
 
     // Poll events from the window.
     let mut event_loop = support::EventLoop::new();
@@ -92,26 +80,40 @@ pub fn display() {
             let ui = &mut ui.set_widgets();
 
             widget::Canvas::new()
-                .top_left_with_margins(32. + 4., 0.)
+                .top_left()
                 .border(0.0f64)
                 .color(color::CHARCOAL)
-                .scroll_kids_vertically()
                 .set(ids.background, ui);
 
-            widget::Canvas::new()
-                .top_left()
-                .h(32. + 4.)
-                .color(color::LIGHT_BLUE)
-                .set(ids.buttons, ui);
+            widget::Scrollbar::y_axis(ids.background).set(ids.background_scrollbar, ui);
 
-            widget::Scrollbar::y_axis(ids.background)
-                .set(ids.background_scrollbar, ui);
+            if let Some((_, _, w, h)) = ui.kid_area_of(ids.background).map(|r| r.x_y_w_h()) {
+                let w = w as u32;
+                let h = h as u32;
+                if (w, h) != prev_dims || canvas_img.is_none() {
+                    let datums = render(samples, w, h);
+                    let img = RawImage2d {
+                        data: datums.into(),
+                        width: w as u32,
+                        height: h as u32,
+                        format: ClientFormat::U8U8U8,
+                    };
+                    let img = glium::texture::Texture2d::new(&display, img).unwrap();
 
-            //println!("{:?}", ui.kid_area_of(ids.background));
-            widget::Image::new(gradient)
-                .w_h(w as f64, h as f64)
-                .middle_of(ids.background)
-                .set(ids.rust_logo, ui);
+                    prev_dims = (w, h);
+
+                    if let Some(id) = canvas_img {
+                        image_map.replace(id, img);
+                    } else {
+                        canvas_img = Some(image_map.insert(img));
+                    }
+                }
+
+                widget::Image::new(canvas_img.unwrap())
+                    .w_h(w as f64, h as f64)
+                    .top_left_of(ids.background)
+                    .set(ids.canvas, ui);
+            }
         }
 
         // Render the `Ui` and then display it on the screen.
@@ -123,4 +125,18 @@ pub fn display() {
             target.finish().unwrap();
         }
     }
+}
+
+fn render(samples: &mut Samples, w: u32, h: u32) -> Vec<(u8, u8, u8)> {
+    let w = w as usize;
+    let h = h as usize;
+
+    let mut datums = vec![(0u8, 0u8, 0u8); w * h];
+    for i in 0..h {
+        for j in 0..w {
+            let val = (256. * (i as f32 / h as f32)) as u8;
+            datums[j + (i * w)] = (val, val, val);
+        }
+    }
+    datums
 }
