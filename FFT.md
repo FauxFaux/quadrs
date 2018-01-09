@@ -86,9 +86,11 @@ the bits are really sharp:
 ![vishnua at fft:8](screenshots/vishnua-8.png)
 
 If instead we take `fft-size` 32:
+
 ![vishnua at fft:32](screenshots/vishnua-32.png)
 
 ..or 128:
+
 ![vishnua at fft:128](screenshots/vishnua-128.png)
 
 ..the bits are blurred, or downright ruined. Note that all images have been
