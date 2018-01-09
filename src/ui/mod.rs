@@ -30,7 +30,7 @@ struct Params {
     width: u32,
     height: u32,
     fft_width: usize,
-    stride: u64,
+    stride: u32,
     stretch: isize,
 }
 
@@ -225,13 +225,15 @@ pub fn display(samples: &mut Samples) -> Result<()> {
                 }
             }
 
-            widget::Text::new(&format!("stride: {}", params.stride))
+            for val in widget::NumberDialer::new(f64::from(params.stride), 1., 4096., 0)
                 .mid_left_of(ids.buttons)
                 .right_from(ids.stride_down, BUTTON_PAD)
-                .w(128.)
-                .set(ids.stride_label, ui);
-
-            widget::Scrollbar::y_axis(ids.background).set(ids.background_scrollbar, ui);
+                .w(64.)
+                .set(ids.stride_label, ui)
+            {
+                let val: f64 = val;
+                params.stride = val.round() as u32;
+            }
 
             if let Some((_, _, w, h)) = ui.kid_area_of(ids.background).map(|r| r.x_y_w_h()) {
                 let w = w as u32;
@@ -370,7 +372,7 @@ fn render(samples: &mut Samples, params: &Params) -> Result<Vec<(u8, u8, u8)>> {
             ox = 0;
             row += 1;
         }
-        sample_pos += params.stride;
+        sample_pos += params.stride as u64;
     }
 
     println!("{} {}", min, max);
