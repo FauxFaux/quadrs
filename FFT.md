@@ -83,13 +83,13 @@ Here's an example data file with a sample rate of 39ksps, and a data rate of 5kb
 Each bit should be around 39k/5k ~= 7.8 samples long. If we use an fft of size 8,
 the bits are really sharp:
 
-#![vishnua at fft:8](screenshots/vishnua-8.png)
+![vishnua at fft:8](screenshots/vishnua-8.png)
 
 If instead we take `fft-size` 32:
-#![vishnua at fft:32](screenshots/vishnua-32.png)
+![vishnua at fft:32](screenshots/vishnua-32.png)
 
 ..or 128:
-#![vishnua at fft:128](screenshots/vishnua-128.png)
+![vishnua at fft:128](screenshots/vishnua-128.png)
 
 ..the bits are blurred, or downright ruined. Note that all images have been
 vertically scaled to be similar, and have had their overlap adjusted to be
