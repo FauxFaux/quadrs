@@ -241,7 +241,13 @@ pub fn display(samples: &mut Samples) -> Result<()> {
                 params.width = w;
                 params.height = h;
                 if params != prev_params || canvas_img.is_none() {
-                    let datums = render(samples, &params)?;
+                    let datums = match render(samples, &params) {
+                        Ok(datums) => datums,
+                        Err(e) => {
+                            println!("TODO: render failed: {:?}", e);
+                            vec![(0,0,0); w as usize * h as usize]
+                        }
+                    };
                     let img = RawImage2d {
                         data: datums.into(),
                         width: w as u32,
@@ -309,7 +315,7 @@ fn render(samples: &mut Samples, params: &Params) -> Result<Vec<(u8, u8, u8)>> {
 
     let fft = Radix4::<f32>::new(params.fft_width, false);
 
-    assert!(params.stretch > 0, "TODO: negative stretching");
+    ensure!(params.stretch > 0, "TODO: negative stretching");
     let stretch = params.stretch as usize;
 
     let mut sample_pos = 0;
