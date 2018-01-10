@@ -245,7 +245,7 @@ pub fn display(samples: &mut Samples) -> Result<()> {
                         Ok(datums) => datums,
                         Err(e) => {
                             println!("TODO: render failed: {:?}", e);
-                            vec![(0,0,0); w as usize * h as usize]
+                            vec![(0, 0, 0); w as usize * h as usize]
                         }
                     };
                     let img = RawImage2d {
@@ -327,6 +327,10 @@ fn render(samples: &mut Samples, params: &Params) -> Result<Vec<(u8, u8, u8)>> {
     let mut min = 99.0;
     let mut max = 0.0;
 
+    let scan = params.stride;
+    let mut scan_pos = 0;
+    let mut means = (0., 0.);
+
     let samples_available = samples.len() - params.fft_width as u64;
     while sample_pos < samples_available {
         let out = fft_at(&fft, samples, sample_pos)?;
@@ -337,6 +341,15 @@ fn render(samples: &mut Samples, params: &Params) -> Result<Vec<(u8, u8, u8)>> {
             break;
         }
 
+        means.0 += out.iter()
+            .take(params.fft_width / 2)
+            .map(|v| v.norm())
+            .sum::<f32>();
+        means.1 += out.iter()
+            .skip(params.fft_width / 2)
+            .map(|v| v.norm())
+            .sum::<f32>();
+
         for (o, v) in out.iter()
             .skip(params.fft_width / 2)
             .chain(out.iter().take(params.fft_width / 2))
@@ -344,7 +357,7 @@ fn render(samples: &mut Samples, params: &Params) -> Result<Vec<(u8, u8, u8)>> {
         {
             use palette::RgbHue;
             //let v = (v.norm() / 10.0 * 256.0) as u8;
-            let scaled = v.norm() / 2.29 / 11.4 / 0.66;
+            let scaled = v.norm() / 2.29;
             if scaled < min {
                 min = scaled;
             }
@@ -359,11 +372,16 @@ fn render(samples: &mut Samples, params: &Params) -> Result<Vec<(u8, u8, u8)>> {
                 1.0,
                 1.0 - scaled,
             ));
-            let v = (
+            let mut v = (
                 (rgb.red * 256.0) as u8,
                 (rgb.green * 256.0) as u8,
                 (rgb.blue * 256.0) as u8,
             );
+
+            if 0 == scan_pos {
+                v = (0, 0, 0);
+            }
+
             for off in 0..stretch {
                 let y = oy + o * stretch + off;
                 if y >= h {
@@ -378,7 +396,15 @@ fn render(samples: &mut Samples, params: &Params) -> Result<Vec<(u8, u8, u8)>> {
             ox = 0;
             row += 1;
         }
-        sample_pos += params.stride as u64;
+
+        scan_pos += 1;
+        if scan_pos >= scan {
+            scan_pos = 0;
+            println!("{}: {:?}", if means.0 < means.1 { 0 } else { 1 }, means);
+            means = (0., 0.);
+        }
+
+        sample_pos += 1;
     }
 
     println!("{} {}", min, max);
