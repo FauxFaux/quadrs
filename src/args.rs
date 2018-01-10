@@ -35,7 +35,7 @@ pub enum Command {
     },
     Gen {
         sample_rate: u64,
-        cos: Vec<u64>,
+        cos: Vec<i64>,
     },
     Ui,
 }
@@ -214,10 +214,10 @@ fn parse_gen<'a, I: Iterator<Item = &'a String>>(
     mut args: I,
     mut map: HashMap<String, Vec<String>>,
 ) -> Result<Command> {
-    let cos: Vec<u64> = match map.remove("cos") {
+    let cos: Vec<i64> = match map.remove("cos") {
         Some(val) => val.into_iter()
-            .map(|freq| parse_si_u64(&freq))
-            .collect::<Result<Vec<u64>>>()?,
+            .map(|freq| parse_si_i64(&freq))
+            .collect::<Result<Vec<i64>>>()?,
         None => bail!("gen requires at least one operation"),
     };
 

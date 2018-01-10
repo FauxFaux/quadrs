@@ -102,3 +102,17 @@ frequency bands, but small enough that it doesn't consume too much "time".
 
 This seems like it would only work after centering and heavy decimation,
 like this signal has seen.
+
+If the FFT is too narrow, then it can't identify frequencies that aren't
+a multiple of the sample rate.
+
+Here's a 4k and -5k tone in a 32ksps file, at width 16. The 4k tone is
+kinda okay (although has picked up some banding from the other signal) as
+it perfectly fits in one of the frequency buckets, even after being a bit
+mushed? The 5k tone (top) has been fully mushed out, however.
+
+![4k + 5k at 32ksps at 16](screenshots/too-small-fft.png)
+
+Here's the actual tones with the fft set ideally:
+
+![4k + 5k at 32ksps at 32](screenshots/4-5-32-fft.png)

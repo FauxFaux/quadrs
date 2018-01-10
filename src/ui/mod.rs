@@ -338,7 +338,7 @@ fn render(samples: &mut Samples, params: &Params) -> Result<Vec<(u8, u8, u8)>> {
         {
             use palette::RgbHue;
             //let v = (v.norm() / 10.0 * 256.0) as u8;
-            let scaled = v.norm() / 2.29;
+            let scaled = v.norm() / 2.29 / 11.4 / 0.66;
             if scaled < min {
                 min = scaled;
             }

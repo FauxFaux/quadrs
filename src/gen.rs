@@ -8,11 +8,11 @@ use TAU;
 pub struct Gen {
     sample_rate: u64,
     seconds: u64,
-    cos: Vec<u64>,
+    cos: Vec<i64>,
 }
 
 impl Gen {
-    pub fn new(cos: Vec<u64>, sample_rate: u64) -> Self {
+    pub fn new(cos: Vec<i64>, sample_rate: u64) -> Self {
         Gen {
             cos,
             sample_rate,
