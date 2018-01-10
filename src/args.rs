@@ -45,18 +45,18 @@ pub fn parse<'a, I: Iterator<Item = &'a String>>(args: I) -> Result<Vec<Command>
     let mut args = args.peekable();
 
     while let Some(cmd) = args.next() {
-        let map = read_just_args(cmd.as_str(), &mut args)?;
+        let map = read_just_args(&mut args).chain_err(|| format!("finding args for {:?}", cmd))?;
 
         matched.push(match cmd.as_str() {
-            "from" => parse_from(&mut args, no_duplicates(map)?)?,
-            "shift" => parse_shift(&mut args, no_duplicates(map)?)?,
-            "lowpass" => parse_lowpass(&mut args, no_duplicates(map)?)?,
-            "sparkfft" => parse_sparkfft(&mut args, no_duplicates(map)?)?,
-            "write" => parse_write(&mut args, no_duplicates(map)?)?,
-            "gen" => parse_gen(&mut args, map)?,
-            "ui" => Command::Ui,
-            other => bail!("unrecognised command: '{}'", other),
-        });
+            "from" => parse_from(&mut args, no_duplicates(map)?),
+            "shift" => parse_shift(&mut args, no_duplicates(map)?),
+            "lowpass" => parse_lowpass(&mut args, no_duplicates(map)?),
+            "sparkfft" => parse_sparkfft(&mut args, no_duplicates(map)?),
+            "write" => parse_write(&mut args, no_duplicates(map)?),
+            "gen" => parse_gen(&mut args, map),
+            "ui" => parse_ui(&mut args, no_duplicates(map)?),
+            _ => Err("unrecognised command".into()),
+        }.chain_err(|| format!("processing command: {:?}", cmd))?);
     }
 
     Ok(matched)
@@ -70,7 +70,7 @@ fn parse_from<'a, I: Iterator<Item = &'a String>>(
 
     let provided_sample_rate = map.remove("sr");
     let provided_format = map.remove("format");
-    ensure!(map.is_empty(), "invalid flags for 'from': {:?}", map.keys());
+    ensure!(map.is_empty(), "invalid flags: {:?}", map.keys());
 
     let sample_rate = parse_si_u64(
         match provided_sample_rate {
@@ -115,11 +115,8 @@ fn parse_lowpass<'a, I: Iterator<Item = &'a String>>(
     mut args: I,
     mut map: HashMap<String, String>,
 ) -> Result<Command> {
-    let frequency: u64 = parse_si_u64(
-        args.next()
-            .ok_or("'lowpass' requires a frequency argument")?
-            .as_str(),
-    )?;
+    let frequency: u64 = parse_si_u64(args.next()
+        .ok_or("'lowpass' requires a frequency argument")?)?;
 
     // TODO: much better defaults
     let size = match map.remove("power") {
@@ -134,11 +131,7 @@ fn parse_lowpass<'a, I: Iterator<Item = &'a String>>(
         None => 8,
     };
 
-    ensure!(
-        map.is_empty(),
-        "invalid flags for 'lowpass': {:?}",
-        map.keys()
-    );
+    ensure!(map.is_empty(), "invalid flags: {:?}", map.keys());
 
     Ok(Command::LowPass {
         size,
@@ -148,7 +141,7 @@ fn parse_lowpass<'a, I: Iterator<Item = &'a String>>(
 }
 
 fn parse_sparkfft<'a, I: Iterator<Item = &'a String>>(
-    args: I,
+    _args: I,
     mut map: HashMap<String, String>,
 ) -> Result<Command> {
     let width = match map.remove("width") {
@@ -197,11 +190,7 @@ fn parse_write<'a, I: Iterator<Item = &'a String>>(
         None => false,
     };
 
-    ensure!(
-        map.is_empty(),
-        "invalid flags for 'write': {:?}",
-        map.keys()
-    );
+    ensure!(map.is_empty(), "invalid flags: {:?}", map.keys());
 
     let prefix: String = args.next()
         .ok_or("'lowpass' requires a frequency argument")?
@@ -217,15 +206,26 @@ fn parse_gen<'a, I: Iterator<Item = &'a String>>(
     let cos: Vec<i64> = match map.remove("cos") {
         Some(val) => val.into_iter()
             .map(|freq| parse_si_i64(&freq))
-            .collect::<Result<Vec<i64>>>()?,
+            .collect::<Result<Vec<i64>>>()
+            .chain_err(|| "parsing -cos")?,
         None => bail!("gen requires at least one operation"),
     };
 
-    ensure!(map.is_empty(), "invalid flags for 'gen': {:?}", map.keys());
+    ensure!(map.is_empty(), "invalid flags: {:?}", map.keys());
 
-    let sample_rate = parse_si_u64(args.next().ok_or("'gen' requires a sample rate argument")?)?;
+    let sample_rate = parse_si_u64(args.next().ok_or("sample rate argument required")?)
+        .chain_err(|| "parsing sample rate")?;
 
     Ok(Command::Gen { sample_rate, cos })
+}
+
+fn parse_ui<'a, I: Iterator<Item = &'a String>>(
+    mut _args: I,
+    map: HashMap<String, String>,
+) -> Result<Command> {
+    ensure!(map.is_empty(), "invalid flags: {:?}", map.keys());
+
+    Ok(Command::Ui)
 }
 
 fn guess_sample_rate(filename: &str) -> Result<String> {
@@ -262,7 +262,8 @@ fn find_multiplication_suffix(from: &str) -> (&str, u32) {
 
 fn parse_si_i64(from: &str) -> Result<i64> {
     let (val, mul) = find_multiplication_suffix(from);
-    let parsed: i64 = val.parse()?;
+    let parsed: i64 = val.parse()
+        .chain_err(|| format!("parsing signed integer {:?}", from))?;
     Ok(parsed
         .checked_mul(i64::from(mul))
         .ok_or_else(|| format!("unit is out of range: {}", from))?)
@@ -270,7 +271,8 @@ fn parse_si_i64(from: &str) -> Result<i64> {
 
 fn parse_si_u64(from: &str) -> Result<u64> {
     let (val, mul) = find_multiplication_suffix(from);
-    let parsed: u64 = val.parse()?;
+    let parsed: u64 = val.parse()
+        .chain_err(|| format!("parsing unsigned integer {:?}", from))?;
     Ok(parsed
         .checked_mul(u64::from(mul))
         .ok_or_else(|| format!("unit is out of range: {}", from))?)
@@ -278,7 +280,8 @@ fn parse_si_u64(from: &str) -> Result<u64> {
 
 fn parse_si_f64(from: &str) -> Result<f64> {
     let (val, mul) = find_multiplication_suffix(from);
-    let parsed: f64 = val.parse()?;
+    let parsed: f64 = val.parse()
+        .chain_err(|| format!("parsing float {:?}", from))?;
     Ok(parsed * f64::from(mul))
 }
 
@@ -305,7 +308,7 @@ fn guess_from_extension(ext: &str) -> Result<FileFormat> {
     })
 }
 
-fn read_just_args<'a, I>(cmd: &str, iter: &mut Peekable<I>) -> Result<HashMap<String, Vec<String>>>
+fn read_just_args<'a, I>(iter: &mut Peekable<I>) -> Result<HashMap<String, Vec<String>>>
 where
     I: Iterator<Item = &'a String>,
 {
@@ -335,11 +338,9 @@ where
         let opt = iter.next().expect("just peeked that");
 
         let arg = match iter.next() {
-            Some(arg) if arg.is_empty() => {
-                bail!("{} .. {} requires a non-empty argument", cmd, opt)
-            }
+            Some(arg) if arg.is_empty() => bail!("{} requires a non-empty argument", opt),
             Some(arg) => arg,
-            None => bail!("{} .. {} requires an argument", cmd, opt),
+            None => bail!("{} requires an argument", opt),
         };
 
         ret.entry(opt[1..].to_string())

@@ -75,7 +75,14 @@ fn run() -> Result<()> {
     let mut args = args.iter();
     let us = args.next().unwrap();
 
-    let commands = args::parse(args)?;
+    let commands = match args::parse(args) {
+        Ok(commands) => commands,
+        Err(e) => {
+            usage(us);
+            bail!(e);
+        }
+    };
+
     if commands.is_empty() {
         usage(us);
         bail!("no commands provided");
