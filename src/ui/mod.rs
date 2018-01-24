@@ -400,7 +400,12 @@ fn render(samples: &mut Samples, params: &Params) -> Result<Vec<(u8, u8, u8)>> {
         scan_pos += 1;
         if scan_pos >= scan {
             scan_pos = 0;
-            println!("{}: {:?}", if means.0 < means.1 { 0 } else { 1 }, means);
+            println!(
+                "{}: {:.0} {:?}",
+                if means.0 < means.1 { 0 } else { 1 },
+                10. * (means.0 - means.1).abs() / means.0.max(means.1),
+                means
+            );
             means = (0., 0.);
         }
 
