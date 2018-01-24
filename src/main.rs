@@ -57,7 +57,7 @@ fn usage(us: &str) {
     println!(" lowpass [-power 20] [-decimate 8] FREQUENCY \\");
     println!("sparkfft [-width 128] [-stride STRIDE] [-range LOW:HIGH] \\");
     println!("   write [-overwrite no] FILENAME_PREFIX \\");
-    println!("     gen [-cos FREQUENCY]* SAMPLE_RATE \\");
+    println!("     gen [-cos FREQUENCY]* [-len 1 (second)] SAMPLE_RATE \\");
 
     println!();
     println!();
@@ -104,7 +104,11 @@ fn run() -> Result<()> {
                     sample_rate,
                 )))
             }
-            Gen { sample_rate, cos } => samples = Some(Box::new(gen::Gen::new(cos, sample_rate))),
+            Gen {
+                sample_rate,
+                cos,
+                seconds,
+            } => samples = Some(Box::new(gen::Gen::new(cos, sample_rate, seconds)?)),
             Shift { frequency } => {
                 let orig = samples.ok_or("shift requires an input")?;
                 let sample_rate = orig.sample_rate();

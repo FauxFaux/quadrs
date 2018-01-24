@@ -1,29 +1,34 @@
 use rustfft::num_complex::Complex;
 use rustfft::num_traits::identities::Zero;
 
+use errors::*;
 use samples::Samples;
 
 use TAU;
 
 pub struct Gen {
     sample_rate: u64,
-    seconds: u64,
+    seconds: f64,
     cos: Vec<i64>,
 }
 
 impl Gen {
-    pub fn new(cos: Vec<i64>, sample_rate: u64) -> Self {
-        Gen {
+    pub fn new(cos: Vec<i64>, sample_rate: u64, seconds: f64) -> Result<Self> {
+        ensure!(!cos.is_empty(), "cos cannot be empty");
+        ensure!(0 != sample_rate, "sample rate may not be zero");
+        ensure!(seconds > 0.0, "seconds may not be <= 0");
+
+        Ok(Gen {
             cos,
             sample_rate,
-            seconds: 1,
-        }
+            seconds,
+        })
     }
 }
 
 impl Samples for Gen {
     fn len(&self) -> u64 {
-        self.seconds.checked_mul(self.sample_rate).unwrap()
+        (self.seconds * (self.sample_rate as f64)) as u64
     }
 
     fn read_at(&mut self, off: u64, buf: &mut [Complex<f32>]) -> usize {

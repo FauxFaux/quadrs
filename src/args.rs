@@ -34,6 +34,7 @@ pub enum Command {
         prefix: String,
     },
     Gen {
+        seconds: f64,
         sample_rate: u64,
         cos: Vec<i64>,
     },
@@ -205,10 +206,16 @@ fn parse_gen<'a, I: Iterator<Item = &'a String>>(
 ) -> Result<Command> {
     let cos: Vec<i64> = match map.remove("cos") {
         Some(val) => val.into_iter()
-            .map(|freq| parse_si_i64(&freq))
+            .map(parse_si_i64)
             .collect::<Result<Vec<i64>>>()
             .chain_err(|| "parsing -cos")?,
         None => bail!("gen requires at least one operation"),
+    };
+
+    let seconds = match map.remove("len") {
+        Some(ref val) if val.len() == 1 => parse_si_f64(&val[0]).chain_err(|| "parsing len")?,
+        None => 1.0,
+        _ => bail!("len requires exactly one value"),
     };
 
     ensure!(map.is_empty(), "invalid flags: {:?}", map.keys());
@@ -216,7 +223,11 @@ fn parse_gen<'a, I: Iterator<Item = &'a String>>(
     let sample_rate = parse_si_u64(args.next().ok_or("sample rate argument required")?)
         .chain_err(|| "parsing sample rate")?;
 
-    Ok(Command::Gen { sample_rate, cos })
+    Ok(Command::Gen {
+        sample_rate,
+        cos,
+        seconds,
+    })
 }
 
 fn parse_ui<'a, I: Iterator<Item = &'a String>>(
@@ -260,7 +271,8 @@ fn find_multiplication_suffix(from: &str) -> (&str, u32) {
     }
 }
 
-fn parse_si_i64(from: &str) -> Result<i64> {
+fn parse_si_i64<S: AsRef<str>>(from: S) -> Result<i64> {
+    let from = from.as_ref();
     let (val, mul) = find_multiplication_suffix(from);
     let parsed: i64 = val.parse()
         .chain_err(|| format!("parsing signed integer {:?}", from))?;
@@ -278,7 +290,8 @@ fn parse_si_u64(from: &str) -> Result<u64> {
         .ok_or_else(|| format!("unit is out of range: {}", from))?)
 }
 
-fn parse_si_f64(from: &str) -> Result<f64> {
+fn parse_si_f64<S: AsRef<str>>(from: S) -> Result<f64> {
+    let from = from.as_ref();
     let (val, mul) = find_multiplication_suffix(from);
     let parsed: f64 = val.parse()
         .chain_err(|| format!("parsing float {:?}", from))?;
