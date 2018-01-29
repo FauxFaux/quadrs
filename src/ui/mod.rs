@@ -34,7 +34,7 @@ struct Params {
     stretch: isize,
 }
 
-pub fn display(samples: &mut Samples<Item=Complex<f32>>) -> Result<()> {
+pub fn display(samples: &mut Samples) -> Result<()> {
     const WIDTH: u32 = 800;
     const HEIGHT: u32 = 600;
 
@@ -301,7 +301,7 @@ impl MemImage {
     }
 }
 
-fn render(samples: &mut Samples<Item=Complex<f32>>, params: &Params) -> Result<Vec<(u8, u8, u8)>> {
+fn render(samples: &mut Samples, params: &Params) -> Result<Vec<(u8, u8, u8)>> {
     let w = params.width as usize;
     let h = params.height as usize;
 
@@ -418,7 +418,7 @@ fn render(samples: &mut Samples<Item=Complex<f32>>, params: &Params) -> Result<V
 }
 
 #[inline]
-fn fft_at(fft: &Radix4<f32>, samples: &mut Samples<Item=Complex<f32>>, sample_pos: u64) -> Result<Vec<Complex<f32>>> {
+fn fft_at(fft: &Radix4<f32>, samples: &mut Samples, sample_pos: u64) -> Result<Vec<Complex<f32>>> {
     use rustfft::FFT;
     use rustfft::Length;
     use rustfft::num_traits::identities::Zero;

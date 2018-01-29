@@ -88,7 +88,7 @@ fn run() -> Result<()> {
         bail!("no commands provided");
     }
 
-    let mut samples: Option<Box<Samples<Item = Complex<f32>>>> = None;
+    let mut samples: Option<Box<Samples>> = None;
 
     use args::Command::*;
     for cmd in commands {
@@ -155,7 +155,7 @@ fn run() -> Result<()> {
     Ok(())
 }
 
-fn do_write(samples: &mut Samples<Item=Complex<f32>>, overwrite: bool, prefix: &str) -> Result<()> {
+fn do_write(samples: &mut Samples, overwrite: bool, prefix: &str) -> Result<()> {
     if "-" == prefix {
         unimplemented!()
     }
