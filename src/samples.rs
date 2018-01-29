@@ -8,11 +8,13 @@ use errors::*;
 use usize_from;
 
 pub trait Samples {
+    type Item;
+
     fn len(&self) -> u64;
-    fn read_at(&mut self, off: u64, buf: &mut [Complex<f32>]) -> usize;
+    fn read_at(&mut self, off: u64, buf: &mut [Self::Item]) -> usize;
     fn sample_rate(&self) -> u64;
 
-    fn read_exact_at(&mut self, off: u64, buf: &mut [Complex<f32>]) -> Result<()> {
+    fn read_exact_at(&mut self, off: u64, buf: &mut [Self::Item]) -> Result<()> {
         let wanted = buf.len();
         let got = self.read_at(off, buf);
         ensure!(
@@ -25,7 +27,9 @@ pub trait Samples {
     }
 }
 
-impl<T: Samples + ?Sized> Samples for Box<T> {
+impl<U, T: Samples<Item = U> + ?Sized> Samples for Box<T> {
+    type Item = U;
+
     fn len(&self) -> u64 {
         (**self).len()
     }
@@ -34,7 +38,7 @@ impl<T: Samples + ?Sized> Samples for Box<T> {
         (**self).sample_rate()
     }
 
-    fn read_at(&mut self, off: u64, buf: &mut [Complex<f32>]) -> usize {
+    fn read_at(&mut self, off: u64, buf: &mut [U]) -> usize {
         (**self).read_at(off, buf)
     }
 }
@@ -65,6 +69,8 @@ impl<R> Samples for SampleFile<R>
 where
     R: Read + Seek,
 {
+    type Item = Complex<f32>;
+
     fn len(&self) -> u64 {
         self.file_len / self.format.pair_bytes()
     }

@@ -9,7 +9,7 @@ use errors::*;
 use samples::Samples;
 
 pub fn spark_fft(
-    samples: &mut Samples,
+    samples: &mut Samples<Item=Complex<f32>>,
     fft_width: usize,
     stride: u64,
     min: Option<f32>,
@@ -67,4 +67,27 @@ pub fn spark_fft(
     }
 
     Ok(())
+}
+
+pub struct FreqSlicer<S: Samples> {
+    inner: S,
+    fft_size: usize,
+    decimate: u64,
+}
+
+impl<S: Samples> Samples for FreqSlicer<S> {
+    type Item = bool;
+
+    fn len(&self) -> u64 {
+        self.inner.len() / self.decimate
+    }
+
+    fn read_at(&mut self, off: u64, buf: &mut [bool]) -> usize {
+        self.decimate * off;
+        unimplemented!()
+    }
+
+    fn sample_rate(&self) -> u64 {
+        self.inner.sample_rate() / self.decimate
+    }
 }

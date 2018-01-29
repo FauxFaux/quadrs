@@ -40,6 +40,8 @@ impl<S> Samples for LowPass<S>
 where
     S: Samples,
 {
+    type Item = Complex<f32>;
+
     fn len(&self) -> u64 {
         assert!(self.inner.len() >= self.filter.len() as u64);
         1 + (self.inner.len() - self.filter.len() as u64) / self.decimate

@@ -27,6 +27,8 @@ impl Gen {
 }
 
 impl Samples for Gen {
+    type Item = Complex<f32>;
+
     fn len(&self) -> u64 {
         (self.seconds * (self.sample_rate as f64)) as u64
     }
