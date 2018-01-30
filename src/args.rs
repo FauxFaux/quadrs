@@ -29,7 +29,7 @@ pub enum Command {
         min: Option<f32>,
         max: Option<f32>,
     },
-    FreqLevels {
+    Bucket {
         fft_width: usize,
         stride: u64,
         levels: usize,
@@ -209,7 +209,7 @@ fn parse_bucket<'a, I: Iterator<Item = &'a String>>(
 
     ensure!(map.is_empty(), "invalid flags: {:?}", map.keys());
 
-    Ok(Command::FreqLevels {
+    Ok(Command::Bucket {
         fft_width,
         stride,
         levels,

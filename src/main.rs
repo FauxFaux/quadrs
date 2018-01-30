@@ -144,18 +144,21 @@ fn run() -> Result<()> {
                     max,
                 )?;
             }
-            FreqLevels {
+            Bucket {
                 fft_width,
                 stride,
                 levels,
             } => println!(
-                "{:?}",
+                "{}",
                 fft::freq_levels(
-                    samples.as_mut().ok_or("freqlevels requires an input")?,
+                    samples.as_mut().ok_or("bucket -by freq requires an input")?,
                     fft_width,
                     stride,
                     levels
-                )
+                ).vals
+                    .into_iter()
+                    .map(|x| format!("{}", x))
+                    .collect::<String>()
             ),
             Write { overwrite, prefix } => do_write(
                 samples.as_mut().ok_or("write requires an input")?,

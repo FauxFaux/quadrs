@@ -400,6 +400,7 @@ fn render(samples: &mut Samples, params: &Params) -> Result<Vec<(u8, u8, u8)>> {
         scan_pos += 1;
         if scan_pos >= scan {
             scan_pos = 0;
+            #[cfg(never)]
             println!(
                 "{}: {:.0} {:?}",
                 if means.0 < means.1 { 0 } else { 1 },

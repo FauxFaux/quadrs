@@ -9,6 +9,7 @@ use errors::*;
 use samples::Samples;
 
 use usize_from;
+use u64_from;
 
 pub fn spark_fft(
     samples: &mut Samples,
@@ -73,9 +74,9 @@ pub fn spark_fft(
 
 #[derive(Debug, Clone)]
 pub struct Levels {
-    sample_rate: u64,
-    vals: Vec<usize>,
-    levels: usize,
+    pub sample_rate: u64,
+    pub vals: Vec<usize>,
+    pub levels: usize,
 }
 
 /// `len/decimate` total to return. Need to read every `decimate`, and for fft_width?
@@ -83,7 +84,7 @@ pub fn freq_levels(samples: &mut Samples, fft_width: usize, stride: u64, levels:
     assert_eq!(2, levels, "only supporting two levels for now");
 
     let fft = Radix4::new(fft_width, false);
-    let total = samples.len() / stride;
+    let total = (samples.len() - u64_from(fft_width)) / stride;
     let mut vals = Vec::with_capacity(usize_from(total));
 
     for reading in 0..total {
@@ -96,7 +97,6 @@ pub fn freq_levels(samples: &mut Samples, fft_width: usize, stride: u64, levels:
 
         let first: f32 = out.iter().take(fft_width / 2).map(|c| c.norm()).sum();
         let second: f32 = out.iter().skip(fft_width / 2).map(|c| c.norm()).sum();
-        println!("{} {}", first, second);
         vals.push(if first < second { 0 } else { 1 });
     }
 
