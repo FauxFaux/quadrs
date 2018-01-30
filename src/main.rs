@@ -22,6 +22,7 @@ use num_complex::Complex;
 use num_traits::identities::Zero;
 
 mod args;
+mod bits;
 mod errors;
 mod fft;
 mod filter;
