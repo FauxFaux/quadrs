@@ -6,7 +6,6 @@ use rustfft::FFT;
 use rustfft::algorithm::Radix4;
 
 use errors::*;
-use samples::Bits;
 use samples::Samples;
 
 use usize_from;
@@ -72,41 +71,42 @@ pub fn spark_fft(
     Ok(())
 }
 
-pub struct FreqSlicer<S: Samples> {
-    inner: S,
-    fft_width: usize,
-    decimate: u64,
+pub struct Levels {
+    sample_rate: u64,
+    vals: Vec<usize>,
+    levels: usize,
 }
 
-impl<S: Samples> Bits for FreqSlicer<S> {
-    fn len(&self) -> u64 {
-        self.inner.len() / self.decimate
+/// `len/decimate` total to return. Need to read every `decimate`, and for fft_width?
+pub fn freq_levels(
+    samples: &mut Samples,
+    fft_width: usize,
+    stride: u64,
+    count: usize,
+) -> Levels {
+    assert_eq!(2, count, "only supporting two levels for now");
+
+    let fft = Radix4::new(fft_width, false);
+    let total = samples.len() / stride;
+    let mut vals = Vec::with_capacity(usize_from(total));
+
+    for reading in 0..total {
+        let mut inp = vec![Complex::zero(); fft_width];
+        samples.read_exact_at(reading * stride, &mut inp).unwrap();
+
+        let mut out = vec![Complex::zero(); fft_width];
+        fft.process(&mut inp, &mut out);
+        mem::drop(inp);
+
+        let first: f32 = out.iter().take(fft_width / 2).map(|c| c.norm()).sum();
+        let second: f32 = out.iter().skip(fft_width / 2).map(|c| c.norm()).sum();
+        println!("{} {}", first, second);
+        vals.push(if first < second { 0 } else { 1 });
     }
 
-    /// `len/decimate` total to return. Need to read every `decimate`, and for fft_width?
-    fn read_at(&mut self, off: u64, buf: &mut [bool]) -> usize {
-        let fft = Radix4::new(self.fft_width, false);
-        let start = self.decimate * off;
-        let len = buf.len();
-        let mut buf = vec![Complex::zero(); len * usize_from(self.decimate) + self.fft_width];
-        let valid = self.inner.read_at(start, &mut buf);
-        let buf = &buf[..valid];
-        for i in 0..len.min(buf.len() / usize_from(self.decimate)) {
-            let mut out = vec![Complex::zero(); self.fft_width];
-            // crap, the fft corrupts our buffer, so we can't re-use overlapping reads anyway
-            let copy = &buf[i * usize_from(self.decimate)..];
-            let copy: &[Complex<f32>] = &copy[..self.fft_width];
-            let mut copy = copy.to_vec();
-            fft.process(&mut copy, &mut out);
-            let first: f32 = out.iter().take(self.fft_width / 2).map(|c| c.norm()).sum();
-            let second: f32 = out.iter().skip(self.fft_width / 2).map(|c| c.norm()).sum();
-            println!("{} {}", first, second);
-        }
-
-        0
-    }
-
-    fn sample_rate(&self) -> u64 {
-        self.inner.sample_rate() / self.decimate
+    Levels {
+        vals,
+        levels: 2,
+        sample_rate: samples.sample_rate() / stride
     }
 }

@@ -25,15 +25,6 @@ pub trait Samples {
     }
 }
 
-// TODO: these should maybe be generic? But one cannot alias traits,
-// TODO: so the full name would need to be used...
-
-pub trait Bits {
-    fn len(&self) -> u64;
-    fn read_at(&mut self, off: u64, buf: &mut [bool]) -> usize;
-    fn sample_rate(&self) -> u64;
-}
-
 impl<T: Samples + ?Sized> Samples for Box<T> {
     fn len(&self) -> u64 {
         (**self).len()
