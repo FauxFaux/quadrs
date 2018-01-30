@@ -55,7 +55,8 @@ fn usage(us: &str) {
     println!("    from [-sr SAMPLE_RATE] [-format cf32|cs8|cu8|cs16] FILENAME.sr32k.cf32 \\");
     println!("   shift [-]FREQUENCY \\");
     println!(" lowpass [-power 20] [-decimate 8] FREQUENCY \\");
-    println!("sparkfft [-width 128] [-stride STRIDE] [-range LOW:HIGH] \\");
+    println!("sparkfft [-width 128] [-stride =width] [-range LOW:HIGH] \\");
+    println!("  bucket [-width 128] [-stride =width] [-by freq] COUNT \\");
     println!("   write [-overwrite no] FILENAME_PREFIX \\");
     println!("     gen [-cos FREQUENCY]* [-len 1 (second)] SAMPLE_RATE \\");
 
@@ -143,6 +144,19 @@ fn run() -> Result<()> {
                     max,
                 )?;
             }
+            FreqLevels {
+                fft_width,
+                stride,
+                levels,
+            } => println!(
+                "{:?}",
+                fft::freq_levels(
+                    samples.as_mut().ok_or("freqlevels requires an input")?,
+                    fft_width,
+                    stride,
+                    levels
+                )
+            ),
             Write { overwrite, prefix } => do_write(
                 samples.as_mut().ok_or("write requires an input")?,
                 overwrite,

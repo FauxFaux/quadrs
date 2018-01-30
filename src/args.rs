@@ -29,6 +29,11 @@ pub enum Command {
         min: Option<f32>,
         max: Option<f32>,
     },
+    FreqLevels {
+        fft_width: usize,
+        stride: u64,
+        levels: usize,
+    },
     Write {
         overwrite: bool,
         prefix: String,
@@ -53,6 +58,7 @@ pub fn parse<'a, I: Iterator<Item = &'a String>>(args: I) -> Result<Vec<Command>
             "shift" => parse_shift(&mut args, no_duplicates(map)?),
             "lowpass" => parse_lowpass(&mut args, no_duplicates(map)?),
             "sparkfft" => parse_sparkfft(&mut args, no_duplicates(map)?),
+            "bucket" => parse_bucket(&mut args, no_duplicates(map)?),
             "write" => parse_write(&mut args, no_duplicates(map)?),
             "gen" => parse_gen(&mut args, map),
             "ui" => parse_ui(&mut args, no_duplicates(map)?),
@@ -168,17 +174,45 @@ fn parse_sparkfft<'a, I: Iterator<Item = &'a String>>(
         None => (None, None),
     };
 
-    ensure!(
-        map.is_empty(),
-        "invalid flags for 'sparkfft': {:?}",
-        map.keys()
-    );
+    ensure!(map.is_empty(), "invalid flags: {:?}", map.keys());
 
     Ok(Command::SparkFft {
         width,
         stride,
         min,
         max,
+    })
+}
+
+fn parse_bucket<'a, I: Iterator<Item = &'a String>>(
+    mut args: I,
+    mut map: HashMap<String, String>,
+) -> Result<Command> {
+    let levels = args.next()
+        .ok_or("bucket usage: bucket -by freq [number-of-buckets]")?
+        .parse()?;
+
+    let fft_width = match map.remove("width") {
+        Some(val) => usize_from(parse_si_u64(&val)?),
+        None => 128,
+    };
+
+    let stride = match map.remove("stride") {
+        Some(val) => parse_si_u64(&val)?,
+        None => u64_from(fft_width),
+    };
+
+    match map.remove("by") {
+        Some(ref s) if s == "freq" => {}
+        other => bail!("must bucket -by freq, not {:?}", other),
+    }
+
+    ensure!(map.is_empty(), "invalid flags: {:?}", map.keys());
+
+    Ok(Command::FreqLevels {
+        fft_width,
+        stride,
+        levels,
     })
 }
 

@@ -52,16 +52,16 @@ pub fn spark_fft(
         for val in out.iter()
             .skip(fft_width / 2)
             .chain(out.iter().take(fft_width / 2))
-            {
-                let norm = val.norm();
-                if norm < min {
-                    buf.push(bot);
-                } else if norm >= max {
-                    buf.push(top);
-                } else {
-                    buf.push(graph[((norm - min) / distinction) as usize]);
-                }
+        {
+            let norm = val.norm();
+            if norm < min {
+                buf.push(bot);
+            } else if norm >= max {
+                buf.push(top);
+            } else {
+                buf.push(graph[((norm - min) / distinction) as usize]);
             }
+        }
 
         println!("│{}│", buf);
 
@@ -71,6 +71,7 @@ pub fn spark_fft(
     Ok(())
 }
 
+#[derive(Debug, Clone)]
 pub struct Levels {
     sample_rate: u64,
     vals: Vec<usize>,
@@ -78,13 +79,8 @@ pub struct Levels {
 }
 
 /// `len/decimate` total to return. Need to read every `decimate`, and for fft_width?
-pub fn freq_levels(
-    samples: &mut Samples,
-    fft_width: usize,
-    stride: u64,
-    count: usize,
-) -> Levels {
-    assert_eq!(2, count, "only supporting two levels for now");
+pub fn freq_levels(samples: &mut Samples, fft_width: usize, stride: u64, levels: usize) -> Levels {
+    assert_eq!(2, levels, "only supporting two levels for now");
 
     let fft = Radix4::new(fft_width, false);
     let total = samples.len() / stride;
@@ -107,6 +103,6 @@ pub fn freq_levels(
     Levels {
         vals,
         levels: 2,
-        sample_rate: samples.sample_rate() / stride
+        sample_rate: samples.sample_rate() / stride,
     }
 }
