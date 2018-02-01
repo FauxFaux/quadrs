@@ -79,30 +79,45 @@ fn parse_from<'a, I: Iterator<Item = &'a String>>(
     let provided_format = map.remove("format");
     ensure!(map.is_empty(), "invalid flags: {:?}", map.keys());
 
-    let sample_rate = parse_si_u64(
-        match provided_sample_rate {
-            Some(rate) => rate,
-            None => guess_sample_rate(filename)?,
-        }.as_str(),
-    )?;
+    let mut sample_rate = None;
 
-    let format = guess_from_extension(
-        match provided_format {
-            Some(fmt) => fmt.to_string(),
-            None => {
-                // EURGH
-                let ext_start = 1
-                    + filename.rfind('.').ok_or_else(|| {
-                        format!("can't guess format as no extension: '{}'", filename)
-                    })?;
-                String::from_utf8(filename.bytes().skip(ext_start).collect()).unwrap()
-            }
-        }.as_str(),
-    )?;
+    if let Some(guess) = guess_sample_rate(filename) {
+        sample_rate = Some(guess);
+    }
+
+    let mut format = None;
+
+    // More specifically, it could be a gqrx file of this format:
+    // gqrx_20180126_111922_868000000_8000000_fc.raw'
+    if let Some(gqrx_sample_rate) = Regex::new("gqrx_[0-9]{8}_[0-9]{6}_[0-9]+_([0-9]+)_fc.raw")
+        .unwrap()
+        .captures_iter(filename)
+        .next() {
+        sample_rate = Some(gqrx_sample_rate[1].to_string());
+        format = Some(FileFormat::ComplexFloat32);
+    }
+
+    if let Some(provided) = provided_sample_rate {
+        sample_rate = Some(provided);
+    }
+
+    let sample_rate = sample_rate;
+
+    if let Some(dot) = filename.rfind('.') {
+        let ext_start = 1 + dot;
+        let ext = String::from_utf8(filename.bytes().skip(ext_start).collect()).unwrap();
+        if let Some(guess) = guess_from_extension(&ext) {
+            format = Some(guess);
+        }
+    }
+
+    if let Some(provided) = provided_format {
+        format = Some(guess_from_extension(&provided).ok_or_else(|| format!("unrecognised extension: {:?}", provided))?);
+    }
 
     Ok(Command::From {
-        sample_rate,
-        format,
+        sample_rate: parse_si_u64(&sample_rate.ok_or_else(|| format!("unable to guess format from filename {:?}, please specify it", filename))?)?,
+        format: format.ok_or_else(|| format!("unable to guess format from filename {:?}, please specify it", filename))?,
         filename: filename.to_string(),
     })
 }
@@ -273,17 +288,11 @@ fn parse_ui<'a, I: Iterator<Item = &'a String>>(
     Ok(Command::Ui)
 }
 
-fn guess_sample_rate(filename: &str) -> Result<String> {
-    Ok(Regex::new(r"\bsr([0-9]+[kMG]?)\b")?
+fn guess_sample_rate(filename: &str) -> Option<String> {
+    Regex::new(r"\bsr([0-9]+[kMG]?)\b")
+        .unwrap()
         .find(filename)
-        .ok_or_else(|| {
-            format!(
-                "can't guess sample rate from '{}', please provide it",
-                filename
-            )
-        })?
-        .as_str()[2..]
-        .to_string())
+        .map(|s| s.as_str()[2..].to_string())
 }
 
 fn find_multiplication_suffix(from: &str) -> (&str, u32) {
@@ -343,15 +352,15 @@ fn parse_bool(from: &str) -> Result<bool> {
     }
 }
 
-fn guess_from_extension(ext: &str) -> Result<FileFormat> {
+fn guess_from_extension(ext: &str) -> Option<FileFormat> {
     use FileFormat::*;
-    Ok(match ext {
+    Some(match ext {
         "cf32" | "fc32" => ComplexFloat32,
         "cs8" | "sc8" | "c8" => ComplexInt8,
         "cu8" | "su8" => ComplexUint8,
         "cs16" | "sc16" | "c16" => ComplexInt16,
 
-        other => bail!("unrecognised format code '{}'", other),
+        _ => return None,
     })
 }
 
