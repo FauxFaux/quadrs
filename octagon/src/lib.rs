@@ -77,11 +77,7 @@ pub enum FileFormat {
     /// Fancy
     ComplexInt16,
 }
-/*
-pub fn drive<I>(commands: I) -> Result<Option<Box<Samples>>>
-where I: IntoIterator<Item = Operation> {
-    let mut samples: Option<Box<Samples>> = None;
-*/
+
 impl Operation {
     pub fn exec(&self, mut samples: Option<Box<Samples>>) -> Result<Option<Box<Samples>>> {
         use Operation::*;
