@@ -92,7 +92,8 @@ fn parse_from<'a, I: Iterator<Item = &'a String>>(
     if let Some(gqrx_sample_rate) = Regex::new("gqrx_[0-9]{8}_[0-9]{6}_[0-9]+_([0-9]+)_fc.raw")
         .unwrap()
         .captures_iter(filename)
-        .next() {
+        .next()
+    {
         sample_rate = Some(gqrx_sample_rate[1].to_string());
         format = Some(FileFormat::ComplexFloat32);
     }
@@ -112,12 +113,23 @@ fn parse_from<'a, I: Iterator<Item = &'a String>>(
     }
 
     if let Some(provided) = provided_format {
-        format = Some(guess_from_extension(&provided).ok_or_else(|| format!("unrecognised extension: {:?}", provided))?);
+        format = Some(guess_from_extension(&provided)
+            .ok_or_else(|| format!("unrecognised extension: {:?}", provided))?);
     }
 
     Ok(Command::From {
-        sample_rate: parse_si_u64(&sample_rate.ok_or_else(|| format!("unable to guess format from filename {:?}, please specify it", filename))?)?,
-        format: format.ok_or_else(|| format!("unable to guess format from filename {:?}, please specify it", filename))?,
+        sample_rate: parse_si_u64(&sample_rate.ok_or_else(|| {
+            format!(
+                "unable to guess format from filename {:?}, please specify it",
+                filename
+            )
+        })?)?,
+        format: format.ok_or_else(|| {
+            format!(
+                "unable to guess format from filename {:?}, please specify it",
+                filename
+            )
+        })?,
         filename: filename.to_string(),
     })
 }
