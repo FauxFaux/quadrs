@@ -5,9 +5,6 @@ extern crate num_complex;
 extern crate num_traits;
 extern crate rustfft;
 
-use std::env;
-use std::fs;
-
 use std::f64::consts::PI;
 const TAU: f64 = PI * 2.;
 

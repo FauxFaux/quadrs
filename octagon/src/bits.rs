@@ -7,8 +7,8 @@ fn decode(data: &[bool]) -> String {
         let mut val = 0u8;
         for bit in (0..8).rev() {
             match data.next() {
-                Some(true) => val |= (1 << bit),
-                Some(false) => {}
+                Some(true) => val |= 1 << bit,
+                Some(false) => (),
                 None => break 'a,
             }
         }
@@ -18,7 +18,7 @@ fn decode(data: &[bool]) -> String {
     s
 }
 
-fn scan(data: &[bool], scale: f64) -> (f64, Vec<bool>) {
+pub fn scan(data: &[bool], scale: f64) -> (f64, Vec<bool>) {
     let mut i = 0;
     let half = usize_from((scale / 2.).round() as u64);
     let mut bit = false;
