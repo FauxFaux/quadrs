@@ -3,3 +3,5 @@
 .idea/
 *.iml
 
+*.cf32
+perf.data*
