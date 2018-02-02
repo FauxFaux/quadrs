@@ -6,14 +6,7 @@ authors = ["Chris West (Faux) <git@goeswhere.com>"]
 [dependencies]
 byteorder = "1"
 error-chain = "0.11"
-image = "0.18"
 num-complex = "0.1"
 num-traits = "0.1"
-palette = "0.2"
 regex = "0.2"
 rustfft = "2"
-
-[dependencies.conrod]
-# 0.57 is BUSTED on linux: https://github.com/PistonDevelopers/conrod/issues/1120
-version = "~0.56"
-features = ["glium", "winit"]

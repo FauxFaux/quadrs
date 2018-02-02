@@ -1,12 +1,8 @@
-
-extern crate byteorder;
 #[macro_use]
 extern crate conrod;
 #[macro_use]
 extern crate error_chain;
 extern crate image;
-extern crate num_complex;
-extern crate num_traits;
 extern crate octagon;
 extern crate palette;
 extern crate regex;
