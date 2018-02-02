@@ -16,7 +16,6 @@ where
 {
     /// frequency: complete waves per second
     /// sample rate: samples per second
-
     pub fn new(inner: S, frequency: i64, sample_rate: u64) -> Self {
         assert!(
             frequency.abs() < (sample_rate / 2) as i64,

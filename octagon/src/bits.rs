@@ -57,8 +57,8 @@ pub fn scan(data: &[bool], scale: f64) -> (f64, Vec<bool>) {
 
 fn run_of(data: &[bool], scale: usize, val: bool) -> usize {
     let mut bad = 0;
-    for i in 0..data.len() {
-        if data[i] != val {
+    for (i, bit) in data.iter().cloned().enumerate() {
+        if bit != val {
             bad += 1;
         } else {
             bad = 0;

@@ -24,7 +24,6 @@ pub mod shift;
 pub use errors::*;
 use samples::Samples;
 
-
 pub enum Command {
     From {
         sample_rate: u64,
@@ -62,7 +61,6 @@ pub enum Command {
     Ui,
 }
 
-
 #[derive(Debug, PartialEq, Eq)]
 pub enum FileFormat {
     /// GNU-Radio
@@ -77,7 +75,6 @@ pub enum FileFormat {
     /// Fancy
     ComplexInt16,
 }
-
 
 pub fn do_write(samples: &mut Samples, overwrite: bool, prefix: &str) -> Result<()> {
     if "-" == prefix {
@@ -103,7 +100,7 @@ pub fn do_write(samples: &mut Samples, overwrite: bool, prefix: &str) -> Result<
 
     let mut off = 0;
     while off < samples.len() {
-        let mut buf = [Complex::zero(); 4096];
+        let mut buf = [Complex::zero(); 0x1000];
         let read = samples.read_at(off, &mut buf);
         assert_ne!(0, read, "short read at offset {} of {}", off, samples.len());
         off += read as u64;

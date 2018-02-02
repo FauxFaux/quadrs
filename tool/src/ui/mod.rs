@@ -51,8 +51,9 @@ pub fn display(samples: &mut Samples) -> Result<()> {
     // construct our `Ui`.
     let mut ui = conrod::UiBuilder::new([WIDTH as f64, HEIGHT as f64]).build();
     ui.fonts.insert(
-        text::FontCollection::from_bytes(&include_bytes!("../../../assets/NotoSans-Regular.ttf")[..])
-            .into_font()
+        text::FontCollection::from_bytes(
+            &include_bytes!("../../../assets/NotoSans-Regular.ttf")[..],
+        ).into_font()
             .unwrap(),
     );
 

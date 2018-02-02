@@ -79,7 +79,7 @@ pub struct Levels {
     pub levels: usize,
 }
 
-/// `len/decimate` total to return. Need to read every `decimate`, and for fft_width?
+/// `len/decimate` total to return. Need to read every `decimate`, and for `fft_width`?
 pub fn freq_levels(samples: &mut Samples, fft_width: usize, stride: u64, levels: usize) -> Levels {
     assert_eq!(2, levels, "only supporting two levels for now");
 

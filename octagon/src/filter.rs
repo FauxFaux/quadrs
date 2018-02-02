@@ -1,5 +1,7 @@
-/// Based originally on code from the `synthrs` crate, available under the MIT license.
-/// I'm a hustler baby.
+//! Filtering by frequency, e.g. low-pass filtering and decimation
+//!
+//! Based originally on code from the `synthrs` crate, available under the MIT license.
+//! I'm a hustler baby.
 
 use std::f32::consts::PI;
 
