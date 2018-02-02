@@ -195,13 +195,17 @@ fn do_write(samples: &mut Samples, overwrite: bool, prefix: &str) -> Result<()> 
     let mut file = io::BufWriter::new(options.open(filename)?);
     use byteorder::LittleEndian;
 
-    for off in 0..samples.len() {
-        let mut sample = [Complex::zero(); 1];
-        // failure: RUST_BACKTRACE=1 cargo run -- from ~/25ms.sr12M.cf32 shift -870k lowpass
-        // -decimate 400 1000 write a
-        assert_eq!(1, samples.read_at(off, &mut sample));
-        file.write_f32::<LittleEndian>(sample[0].re)?;
-        file.write_f32::<LittleEndian>(sample[0].im)?;
+    let mut off = 0;
+    while off < samples.len() {
+        let mut buf = [Complex::zero(); 4096];
+        let read = samples.read_at(off, &mut buf);
+        assert_ne!(0, read, "short read at offset {} of {}", off, samples.len());
+        off += read as u64;
+
+        for sample in &buf[..read] {
+            file.write_f32::<LittleEndian>(sample.re)?;
+            file.write_f32::<LittleEndian>(sample.im)?;
+        }
     }
 
     Ok(())
