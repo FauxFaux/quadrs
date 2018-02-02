@@ -21,7 +21,7 @@ use rustfft::algorithm::Radix4;
 use rustfft::num_complex::Complex;
 
 use errors::*;
-use samples::Samples;
+use octagon::Samples;
 
 mod support;
 

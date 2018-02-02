@@ -9,15 +9,6 @@ extern crate regex;
 extern crate rustfft;
 
 use std::env;
-use std::fs;
-
-use octagon::gen;
-use octagon::fft;
-use octagon::filter;
-use octagon::samples;
-use octagon::shift;
-
-use octagon::samples::Samples;
 
 mod args;
 mod errors;
@@ -66,82 +57,11 @@ fn run() -> Result<()> {
         bail!("no commands provided");
     }
 
-    let mut samples: Option<Box<Samples>> = None;
-
-    use octagon::Command::*;
-    for cmd in commands {
-        match cmd {
-            From {
-                filename,
-                format,
-                sample_rate,
-            } => {
-                samples = Some(Box::new(samples::SampleFile::new(
-                    fs::File::open(filename)?,
-                    format,
-                    sample_rate,
-                )))
-            }
-            Gen {
-                sample_rate,
-                cos,
-                seconds,
-            } => samples = Some(Box::new(gen::Gen::new(cos, sample_rate, seconds)?)),
-            Shift { frequency } => {
-                let orig = samples.ok_or("shift requires an input")?;
-                let sample_rate = orig.sample_rate();
-                samples = Some(Box::new(shift::Shift::new(orig, frequency, sample_rate)))
-            }
-            LowPass {
-                size,
-                decimate,
-                frequency,
-            } => {
-                let orig = samples.ok_or("lowpass requires an input")?;
-                let original_sample_rate = orig.sample_rate();
-                samples = Some(Box::new(filter::LowPass::new(
-                    orig,
-                    frequency,
-                    decimate,
-                    original_sample_rate,
-                    size,
-                )))
-            }
-            SparkFft {
-                width,
-                stride,
-                min,
-                max,
-            } => {
-                fft::spark_fft(
-                    samples.as_mut().ok_or("sparkfft requires an input")?,
-                    width,
-                    stride,
-                    min,
-                    max,
-                )?;
-            }
-            Bucket {
-                fft_width,
-                stride,
-                levels,
-            } => println!(
-                "{}",
-                fft::freq_levels(
-                    samples.as_mut().ok_or("bucket -by freq requires an input")?,
-                    fft_width,
-                    stride,
-                    levels
-                ).vals
-                    .into_iter()
-                    .map(|x| format!("{}", x))
-                    .collect::<String>()
-            ),
-            Write { overwrite, prefix } => octagon::do_write(
-                samples.as_mut().ok_or("write requires an input")?,
-                overwrite,
-                &prefix,
-            )?,
+    let mut samples = None;
+    for command in commands {
+        use args::Command::*;
+        match command {
+            Octagon(op) => samples = op.exec(samples)?,
             Ui => ui::display(samples.as_mut().ok_or("ui requires an input FOR NOW")?)?,
         }
     }

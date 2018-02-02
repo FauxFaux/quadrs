@@ -1,14 +1,19 @@
 use std::collections::HashMap;
 use std::iter::Peekable;
 
-use octagon::Command;
 use octagon::FileFormat;
+use octagon::Operation;
 use regex::Regex;
 
 use errors::*;
 
 use usize_from;
 use u64_from;
+
+pub enum Command {
+    Octagon(Operation),
+    Ui,
+}
 
 pub fn parse<'a, I: Iterator<Item = &'a String>>(args: I) -> Result<Vec<Command>> {
     let mut matched = vec![];
@@ -81,7 +86,7 @@ fn parse_from<'a, I: Iterator<Item = &'a String>>(
             .ok_or_else(|| format!("unrecognised extension: {:?}", provided))?);
     }
 
-    Ok(Command::From {
+    Ok(Command::Octagon(Operation::From {
         sample_rate: parse_si_u64(&sample_rate.ok_or_else(|| {
             format!(
                 "unable to guess format from filename {:?}, please specify it",
@@ -95,7 +100,7 @@ fn parse_from<'a, I: Iterator<Item = &'a String>>(
             )
         })?,
         filename: filename.to_string(),
-    })
+    }))
 }
 
 fn parse_shift<'a, I: Iterator<Item = &'a String>>(
@@ -104,9 +109,9 @@ fn parse_shift<'a, I: Iterator<Item = &'a String>>(
 ) -> Result<Command> {
     ensure!(map.is_empty(), "'shift' has no named arguments");
 
-    Ok(Command::Shift {
+    Ok(Command::Octagon(Operation::Shift {
         frequency: parse_si_i64(args.next().ok_or("'shift' requires a frequency argument")?)?,
-    })
+    }))
 }
 
 fn parse_lowpass<'a, I: Iterator<Item = &'a String>>(
@@ -131,11 +136,11 @@ fn parse_lowpass<'a, I: Iterator<Item = &'a String>>(
 
     ensure!(map.is_empty(), "invalid flags: {:?}", map.keys());
 
-    Ok(Command::LowPass {
+    Ok(Command::Octagon(Operation::LowPass {
         size,
         decimate,
         frequency,
-    })
+    }))
 }
 
 fn parse_sparkfft<'a, I: Iterator<Item = &'a String>>(
@@ -167,12 +172,12 @@ fn parse_sparkfft<'a, I: Iterator<Item = &'a String>>(
 
     ensure!(map.is_empty(), "invalid flags: {:?}", map.keys());
 
-    Ok(Command::SparkFft {
+    Ok(Command::Octagon(Operation::SparkFft {
         width,
         stride,
         min,
         max,
-    })
+    }))
 }
 
 fn parse_bucket<'a, I: Iterator<Item = &'a String>>(
@@ -200,11 +205,11 @@ fn parse_bucket<'a, I: Iterator<Item = &'a String>>(
 
     ensure!(map.is_empty(), "invalid flags: {:?}", map.keys());
 
-    Ok(Command::Bucket {
+    Ok(Command::Octagon(Operation::Bucket {
         fft_width,
         stride,
         levels,
-    })
+    }))
 }
 
 fn parse_write<'a, I: Iterator<Item = &'a String>>(
@@ -222,7 +227,7 @@ fn parse_write<'a, I: Iterator<Item = &'a String>>(
         .ok_or("'lowpass' requires a frequency argument")?
         .to_string();
 
-    Ok(Command::Write { overwrite, prefix })
+    Ok(Command::Octagon(Operation::Write { overwrite, prefix }))
 }
 
 fn parse_gen<'a, I: Iterator<Item = &'a String>>(
@@ -248,11 +253,11 @@ fn parse_gen<'a, I: Iterator<Item = &'a String>>(
     let sample_rate = parse_si_u64(args.next().ok_or("sample rate argument required")?)
         .chain_err(|| "parsing sample rate")?;
 
-    Ok(Command::Gen {
+    Ok(Command::Octagon(Operation::Gen {
         sample_rate,
         cos,
         seconds,
-    })
+    }))
 }
 
 fn parse_ui<'a, I: Iterator<Item = &'a String>>(

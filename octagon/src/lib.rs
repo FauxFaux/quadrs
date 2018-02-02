@@ -5,6 +5,8 @@ extern crate num_complex;
 extern crate num_traits;
 extern crate rustfft;
 
+use std::fs;
+
 use std::f64::consts::PI;
 const TAU: f64 = PI * 2.;
 
@@ -14,17 +16,18 @@ use num_complex::Complex;
 use num_traits::identities::Zero;
 
 pub mod bits;
-pub mod errors;
-pub mod fft;
-pub mod filter;
-pub mod gen;
-pub mod samples;
-pub mod shift;
+mod errors;
+mod fft;
+mod filter;
+mod gen;
+mod samples;
+mod shift;
 
 pub use errors::*;
-use samples::Samples;
+pub use samples::Samples;
 
-pub enum Command {
+#[derive(Debug, Clone)]
+pub enum Operation {
     From {
         sample_rate: u64,
         format: ::FileFormat,
@@ -58,10 +61,9 @@ pub enum Command {
         sample_rate: u64,
         cos: Vec<i64>,
     },
-    Ui,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum FileFormat {
     /// GNU-Radio
     ComplexFloat32,
@@ -75,8 +77,99 @@ pub enum FileFormat {
     /// Fancy
     ComplexInt16,
 }
+/*
+pub fn drive<I>(commands: I) -> Result<Option<Box<Samples>>>
+where I: IntoIterator<Item = Operation> {
+    let mut samples: Option<Box<Samples>> = None;
+*/
+impl Operation {
+    pub fn exec(&self, mut samples: Option<Box<Samples>>) -> Result<Option<Box<Samples>>> {
+        use Operation::*;
+        Ok(match *self {
+            From {
+                ref filename,
+                format,
+                sample_rate,
+            } => Some(Box::new(samples::SampleFile::new(
+                fs::File::open(filename)?,
+                format,
+                sample_rate,
+            ))),
+            Gen {
+                sample_rate,
+                ref cos,
+                seconds,
+            } => Some(Box::new(gen::Gen::new(cos.to_vec(), sample_rate, seconds)?)),
+            Shift { frequency } => {
+                let orig = samples.ok_or("shift requires an input")?;
+                let sample_rate = orig.sample_rate();
+                Some(Box::new(shift::Shift::new(orig, frequency, sample_rate)))
+            }
+            LowPass {
+                size,
+                decimate,
+                frequency,
+            } => {
+                let orig = samples.ok_or("lowpass requires an input")?;
+                let original_sample_rate = orig.sample_rate();
+                Some(Box::new(filter::LowPass::new(
+                    orig,
+                    frequency,
+                    decimate,
+                    original_sample_rate,
+                    size,
+                )))
+            }
+            SparkFft {
+                width,
+                stride,
+                min,
+                max,
+            } => {
+                fft::spark_fft(
+                    samples.as_mut().ok_or("sparkfft requires an input")?,
+                    width,
+                    stride,
+                    min,
+                    max,
+                )?;
+                samples
+            }
+            Bucket {
+                fft_width,
+                stride,
+                levels,
+            } => {
+                println!(
+                    "{}",
+                    fft::freq_levels(
+                        samples.as_mut().ok_or("bucket -by freq requires an input")?,
+                        fft_width,
+                        stride,
+                        levels
+                    ).vals
+                        .into_iter()
+                        .map(|x| format!("{}", x))
+                        .collect::<String>()
+                );
+                samples
+            }
+            Write {
+                overwrite,
+                ref prefix,
+            } => {
+                do_write(
+                    samples.as_mut().ok_or("write requires an input")?,
+                    overwrite,
+                    prefix,
+                )?;
+                samples
+            }
+        })
+    }
+}
 
-pub fn do_write(samples: &mut Samples, overwrite: bool, prefix: &str) -> Result<()> {
+fn do_write(samples: &mut Samples, overwrite: bool, prefix: &str) -> Result<()> {
     if "-" == prefix {
         unimplemented!()
     }
