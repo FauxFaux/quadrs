@@ -17,3 +17,6 @@ rustfft = "2"
 # 0.57 is BUSTED on linux: https://github.com/PistonDevelopers/conrod/issues/1120
 version = "~0.56"
 features = ["glium", "winit"]
+
+[dependencies.octagon]
+path = "../octagon"

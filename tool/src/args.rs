@@ -1,50 +1,14 @@
 use std::collections::HashMap;
 use std::iter::Peekable;
 
+use octagon::Command;
+use octagon::FileFormat;
 use regex::Regex;
 
 use errors::*;
 
 use usize_from;
 use u64_from;
-use FileFormat;
-
-pub enum Command {
-    From {
-        sample_rate: u64,
-        format: ::FileFormat,
-        filename: String,
-    },
-    Shift {
-        frequency: i64,
-    },
-    LowPass {
-        size: usize,
-        decimate: u64,
-        frequency: u64,
-    },
-    SparkFft {
-        width: usize,
-        stride: u64,
-        min: Option<f32>,
-        max: Option<f32>,
-    },
-    Bucket {
-        fft_width: usize,
-        stride: u64,
-        levels: usize,
-    },
-    Write {
-        overwrite: bool,
-        prefix: String,
-    },
-    Gen {
-        seconds: f64,
-        sample_rate: u64,
-        cos: Vec<i64>,
-    },
-    Ui,
-}
 
 pub fn parse<'a, I: Iterator<Item = &'a String>>(args: I) -> Result<Vec<Command>> {
     let mut matched = vec![];
@@ -365,7 +329,7 @@ fn parse_bool(from: &str) -> Result<bool> {
 }
 
 fn guess_from_extension(ext: &str) -> Option<FileFormat> {
-    use FileFormat::*;
+    use self::FileFormat::*;
     Some(match ext {
         "cf32" | "fc32" => ComplexFloat32,
         "cs8" | "sc8" | "c8" => ComplexInt8,

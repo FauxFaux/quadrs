@@ -938,6 +938,7 @@ dependencies = [
  "image 0.18.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-complex 0.1.41 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-traits 0.1.42 (registry+https://github.com/rust-lang/crates.io-index)",
+ "octagon 0.1.0",
  "palette 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 0.2.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustfft 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",

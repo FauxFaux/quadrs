@@ -21,18 +21,55 @@ use byteorder::ByteOrder;
 use num_complex::Complex;
 use num_traits::identities::Zero;
 
-mod args;
-mod bits;
-mod errors;
-mod fft;
-mod filter;
-mod gen;
-mod samples;
-mod shift;
-mod ui;
+pub mod bits;
+pub mod errors;
+pub mod fft;
+pub mod filter;
+pub mod gen;
+pub mod samples;
+pub mod shift;
 
-use errors::*;
+pub use errors::*;
 use samples::Samples;
+
+
+pub enum Command {
+    From {
+        sample_rate: u64,
+        format: ::FileFormat,
+        filename: String,
+    },
+    Shift {
+        frequency: i64,
+    },
+    LowPass {
+        size: usize,
+        decimate: u64,
+        frequency: u64,
+    },
+    SparkFft {
+        width: usize,
+        stride: u64,
+        min: Option<f32>,
+        max: Option<f32>,
+    },
+    Bucket {
+        fft_width: usize,
+        stride: u64,
+        levels: usize,
+    },
+    Write {
+        overwrite: bool,
+        prefix: String,
+    },
+    Gen {
+        seconds: f64,
+        sample_rate: u64,
+        cos: Vec<i64>,
+    },
+    Ui,
+}
+
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum FileFormat {
@@ -49,131 +86,8 @@ pub enum FileFormat {
     ComplexInt16,
 }
 
-quick_main!(run);
 
-fn usage(us: &str) {
-    println!("usage: {} \\", us);
-    println!("    from [-sr SAMPLE_RATE] [-format cf32|cs8|cu8|cs16] FILENAME.sr32k.cf32 \\");
-    println!("   shift [-]FREQUENCY \\");
-    println!(" lowpass [-power 20] [-decimate 8] FREQUENCY \\");
-    println!("sparkfft [-width 128] [-stride =width] [-range LOW:HIGH] \\");
-    println!("  bucket [-width 128] [-stride =width] [-by freq] COUNT \\");
-    println!("   write [-overwrite no] FILENAME_PREFIX \\");
-    println!("     gen [-cos FREQUENCY]* [-len 1 (second)] SAMPLE_RATE \\");
-
-    println!();
-    println!();
-    println!("Formats:");
-    println!();
-    println!(" * cf32: complex (little endian) floats, 32-bit (GNU-Radio, gqrx)");
-    println!(" *  cs8: complex      signed (integers),  8-bit (HackRF)");
-    println!(" *  cu8: complex    unsigned (integers),  8-bit (RTL-SDR)");
-    println!(" * cs16: complex      signed (integers), 16-bit (Fancy)");
-    println!();
-}
-
-fn run() -> Result<()> {
-    let args: Vec<String> = env::args().collect();
-    let mut args = args.iter();
-    let us = args.next().unwrap();
-
-    let commands = match args::parse(args) {
-        Ok(commands) => commands,
-        Err(e) => {
-            usage(us);
-            bail!(e);
-        }
-    };
-
-    if commands.is_empty() {
-        usage(us);
-        bail!("no commands provided");
-    }
-
-    let mut samples: Option<Box<Samples>> = None;
-
-    use args::Command::*;
-    for cmd in commands {
-        match cmd {
-            From {
-                filename,
-                format,
-                sample_rate,
-            } => {
-                samples = Some(Box::new(samples::SampleFile::new(
-                    fs::File::open(filename)?,
-                    format,
-                    sample_rate,
-                )))
-            }
-            Gen {
-                sample_rate,
-                cos,
-                seconds,
-            } => samples = Some(Box::new(gen::Gen::new(cos, sample_rate, seconds)?)),
-            Shift { frequency } => {
-                let orig = samples.ok_or("shift requires an input")?;
-                let sample_rate = orig.sample_rate();
-                samples = Some(Box::new(shift::Shift::new(orig, frequency, sample_rate)))
-            }
-            LowPass {
-                size,
-                decimate,
-                frequency,
-            } => {
-                let orig = samples.ok_or("lowpass requires an input")?;
-                let original_sample_rate = orig.sample_rate();
-                samples = Some(Box::new(filter::LowPass::new(
-                    orig,
-                    frequency,
-                    decimate,
-                    original_sample_rate,
-                    size,
-                )))
-            }
-            SparkFft {
-                width,
-                stride,
-                min,
-                max,
-            } => {
-                fft::spark_fft(
-                    samples.as_mut().ok_or("sparkfft requires an input")?,
-                    width,
-                    stride,
-                    min,
-                    max,
-                )?;
-            }
-            Bucket {
-                fft_width,
-                stride,
-                levels,
-            } => println!(
-                "{}",
-                fft::freq_levels(
-                    samples.as_mut().ok_or("bucket -by freq requires an input")?,
-                    fft_width,
-                    stride,
-                    levels
-                ).vals
-                    .into_iter()
-                    .map(|x| format!("{}", x))
-                    .collect::<String>()
-            ),
-            Write { overwrite, prefix } => do_write(
-                samples.as_mut().ok_or("write requires an input")?,
-                overwrite,
-                &prefix,
-            )?,
-            Ui => ui::display(samples.as_mut().ok_or("ui requires an input FOR NOW")?)?,
-        }
-    }
-
-    Ok(())
-}
-
-fn do_write(samples: &mut Samples, overwrite: bool, prefix: &str) -> Result<()> {
+pub fn do_write(samples: &mut Samples, overwrite: bool, prefix: &str) -> Result<()> {
     if "-" == prefix {
         unimplemented!()
     }
