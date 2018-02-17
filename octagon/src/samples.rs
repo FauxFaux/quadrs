@@ -9,8 +9,9 @@ use usize_from;
 
 pub trait Samples {
     fn len(&self) -> u64;
-    fn read_at(&mut self, off: u64, buf: &mut [Complex<f32>]) -> usize;
     fn sample_rate(&self) -> u64;
+
+    fn read_at(&mut self, off: u64, buf: &mut [Complex<f32>]) -> usize;
 
     fn read_exact_at(&mut self, off: u64, buf: &mut [Complex<f32>]) -> Result<()> {
         let wanted = buf.len();

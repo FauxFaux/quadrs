@@ -11,8 +11,7 @@ regex = "0.2"
 rustfft = "2"
 
 [dependencies.conrod]
-# 0.57 is BUSTED on linux: https://github.com/PistonDevelopers/conrod/issues/1120
-version = "~0.56"
+version = "0.58"
 features = ["glium", "winit"]
 
 [dependencies.octagon]
