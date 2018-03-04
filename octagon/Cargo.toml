@@ -7,6 +7,6 @@ authors = ["Chris West (Faux) <git@goeswhere.com>"]
 byteorder = "1"
 error-chain = "0.11"
 num-complex = "0.1"
-num-traits = "0.1"
+num-traits = "0.2"
 regex = "0.2"
 rustfft = "2"

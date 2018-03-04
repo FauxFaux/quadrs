@@ -368,7 +368,7 @@ fn render(samples: &mut Samples, params: &Params) -> Result<Vec<(u8, u8, u8)>> {
 
             let scaled = 1.0 - scaled;
 
-            let rgb = palette::Rgb::from(palette::Hsv::new(
+            let rgb = palette::rgb::Rgb::from(palette::Hsv::new(
                 RgbHue::from(scaled * 0.8 * 360.0),
                 1.0,
                 1.0 - scaled,
