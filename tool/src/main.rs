@@ -7,6 +7,7 @@ extern crate octagon;
 extern crate palette;
 extern crate regex;
 extern crate rustfft;
+extern crate rusttype;
 
 use std::env;
 

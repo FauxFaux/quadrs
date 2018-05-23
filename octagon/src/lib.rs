@@ -170,9 +170,9 @@ fn do_write(samples: &mut Samples, overwrite: bool, prefix: &str) -> Result<()> 
         unimplemented!()
     }
 
+    use byteorder::WriteBytesExt;
     use std::fs;
     use std::io;
-    use byteorder::WriteBytesExt;
 
     let mut options = fs::OpenOptions::new();
     options.write(true);
@@ -226,8 +226,8 @@ impl FileFormat {
     }
 
     fn to_f32(&self, buf: &[u8]) -> f32 {
-        use FileFormat::*;
         use byteorder::LittleEndian;
+        use FileFormat::*;
 
         assert_eq!(self.type_bytes(), buf.len() as u64);
 

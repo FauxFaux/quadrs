@@ -8,8 +8,8 @@ use std::f32::consts::PI;
 use rustfft::num_complex::Complex;
 use rustfft::num_traits::Zero;
 
-use usize_from;
 use samples::Samples;
+use usize_from;
 
 pub struct LowPass<S> {
     inner: S,

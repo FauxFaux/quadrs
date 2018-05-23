@@ -50,12 +50,9 @@ pub fn display(samples: &mut Samples) -> Result<()> {
 
     // construct our `Ui`.
     let mut ui = conrod::UiBuilder::new([WIDTH as f64, HEIGHT as f64]).build();
-    ui.fonts.insert(
-        text::FontCollection::from_bytes(
-            &include_bytes!("../../../assets/NotoSans-Regular.ttf")[..],
-        ).into_font()
-            .unwrap(),
-    );
+    ui.fonts.insert(text::FontCollection::from_bytes(
+        &include_bytes!("../../../assets/NotoSans-Regular.ttf")[..],
+    )?.into_font()?);
 
     // A type used for converting `conrod::render::Primitives` into `Command`s that can be used
     // for drawing to the glium `Surface`.
@@ -421,9 +418,9 @@ fn render(samples: &mut Samples, params: &Params) -> Result<Vec<(u8, u8, u8)>> {
 
 #[inline]
 fn fft_at(fft: &Radix4<f32>, samples: &mut Samples, sample_pos: u64) -> Result<Vec<Complex<f32>>> {
-    use rustfft::FFT;
-    use rustfft::Length;
     use rustfft::num_traits::identities::Zero;
+    use rustfft::Length;
+    use rustfft::FFT;
 
     let fft_width = fft.len();
     let mut out = vec![Complex::zero(); fft_width];

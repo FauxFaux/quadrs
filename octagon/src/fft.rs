@@ -2,14 +2,14 @@ use std::mem;
 
 use num_complex::Complex;
 use num_traits::identities::Zero;
-use rustfft::FFT;
 use rustfft::algorithm::Radix4;
+use rustfft::FFT;
 
 use errors::*;
 use samples::Samples;
 
-use usize_from;
 use u64_from;
+use usize_from;
 
 pub fn spark_fft(
     samples: &mut Samples,

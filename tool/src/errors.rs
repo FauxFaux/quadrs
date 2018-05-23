@@ -8,5 +8,6 @@ error_chain! {
         PIE(::std::num::ParseIntError);
         PFE(::std::num::ParseFloatError);
         Regex(::regex::Error);
+        Type(::rusttype::Error);
     }
 }

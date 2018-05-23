@@ -7,8 +7,8 @@ use regex::Regex;
 
 use errors::*;
 
-use usize_from;
 use u64_from;
+use usize_from;
 
 pub enum Command {
     Octagon(Operation),

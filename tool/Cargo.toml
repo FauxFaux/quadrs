@@ -9,9 +9,10 @@ image = "0.18"
 palette = "0.3"
 regex = "0.2"
 rustfft = "2"
+rusttype = "*"
 
 [dependencies.conrod]
-version = "0.58"
+version = "0.59"
 features = ["glium", "winit"]
 
 [dependencies.octagon]
