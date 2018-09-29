@@ -71,17 +71,3 @@ fn main() -> Result<(), Error> {
 
     Ok(())
 }
-
-// clippy
-#[allow(unknown_lints, absurd_extreme_comparisons)]
-fn usize_from(val: u64) -> usize {
-    assert!(val <= std::usize::MAX as u64);
-    val as usize
-}
-
-// clippy
-#[allow(unknown_lints, absurd_extreme_comparisons)]
-fn u64_from(val: usize) -> u64 {
-    assert!((val as u64) <= std::u64::MAX);
-    val as u64
-}

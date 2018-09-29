@@ -2,14 +2,13 @@ use std::collections::HashMap;
 use std::iter::Peekable;
 
 use cast::i64;
+use cast::u64;
+use cast::usize;
 use failure::Error;
 use failure::ResultExt;
 use octagon::FileFormat;
 use octagon::Operation;
 use regex::Regex;
-
-use u64_from;
-use usize_from;
 
 pub enum Command {
     Octagon(Operation),
@@ -137,7 +136,7 @@ fn parse_lowpass<'a, I: Iterator<Item = &'a String>>(
 
     // TODO: much better defaults
     let size = match map.remove("power") {
-        Some(val) => usize_from(parse_si_u64(&val)?)
+        Some(val) => usize(parse_si_u64(&val)?)
             .checked_mul(2)
             .ok_or_else(|| format_err!("power is too large"))?,
         None => 40,
@@ -162,13 +161,13 @@ fn parse_sparkfft<'a, I: Iterator<Item = &'a String>>(
     mut map: HashMap<String, String>,
 ) -> Result<Command, Error> {
     let width = match map.remove("width") {
-        Some(val) => usize_from(parse_si_u64(&val)?),
+        Some(val) => usize(parse_si_u64(&val)?),
         None => 128,
     };
 
     let stride = match map.remove("stride") {
         Some(val) => parse_si_u64(&val)?,
-        None => u64_from(width),
+        None => u64(width),
     };
 
     let (min, max) = match map.remove("range") {
@@ -206,13 +205,13 @@ fn parse_bucket<'a, I: Iterator<Item = &'a String>>(
         .parse()?;
 
     let fft_width = match map.remove("width") {
-        Some(val) => usize_from(parse_si_u64(&val)?),
+        Some(val) => usize(parse_si_u64(&val)?),
         None => 128,
     };
 
     let stride = match map.remove("stride") {
         Some(val) => parse_si_u64(&val)?,
-        None => u64_from(fft_width),
+        None => u64(fft_width),
     };
 
     match map.remove("by") {
