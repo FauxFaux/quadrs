@@ -38,7 +38,7 @@ pub fn display(samples: &mut Samples) -> Result<(), Error> {
     let mut events_loop = glium::glutin::EventsLoop::new();
     let window = glium::glutin::WindowBuilder::new()
         .with_title("quadrs")
-        .with_dimensions(WIDTH, HEIGHT);
+        .with_dimensions((WIDTH, HEIGHT).into());
     let context = glium::glutin::ContextBuilder::new()
         .with_vsync(true)
         .with_multisampling(4);
@@ -102,7 +102,8 @@ pub fn display(samples: &mut Samples) -> Result<(), Error> {
             match event {
                 glium::glutin::Event::WindowEvent { event, .. } => match event {
                     // Break from the loop upon `Escape`.
-                    glium::glutin::WindowEvent::Closed
+                    glium::glutin::WindowEvent::Destroyed
+                    | glium::glutin::WindowEvent::CloseRequested
                     | glium::glutin::WindowEvent::KeyboardInput {
                         input:
                             glium::glutin::KeyboardInput {
@@ -367,7 +368,7 @@ fn render(samples: &mut Samples, params: &Params) -> Result<Vec<(u8, u8, u8)>, E
 
             let scaled = 1.0 - scaled;
 
-            let rgb = palette::rgb::Rgb::from(palette::Hsv::new(
+            let rgb = palette::rgb::Srgb::from(palette::Hsv::new(
                 RgbHue::from(scaled * 0.8 * 360.0),
                 1.0,
                 1.0 - scaled,
