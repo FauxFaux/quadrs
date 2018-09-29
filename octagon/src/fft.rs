@@ -1,11 +1,11 @@
 use std::mem;
 
+use failure::Error;
 use num_complex::Complex;
 use num_traits::identities::Zero;
 use rustfft::algorithm::Radix4;
 use rustfft::FFT;
 
-use errors::*;
 use samples::Samples;
 
 use u64_from;
@@ -17,7 +17,7 @@ pub fn spark_fft(
     stride: u64,
     min: Option<f32>,
     max: Option<f32>,
-) -> Result<()> {
+) -> Result<(), Error> {
     println!("sparkfft sample_rate={}", samples.sample_rate());
 
     // TODO: super dumb:
@@ -43,14 +43,16 @@ pub fn spark_fft(
         let graph: Vec<char> = "▁▂▃▄▅▆▇".chars().collect();
 
         #[cfg(never)]
-        let max = out.iter()
+        let max = out
+            .iter()
             .map(|x| x.norm())
             .max_by(|x, y| x.partial_cmp(y).unwrap())
             .unwrap();
 
         let distinction = (max - min) / (graph.len() as f32);
         let mut buf = String::with_capacity(fft_width);
-        for val in out.iter()
+        for val in out
+            .iter()
             .skip(fft_width / 2)
             .chain(out.iter().take(fft_width / 2))
         {

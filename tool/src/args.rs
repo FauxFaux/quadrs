@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 use std::iter::Peekable;
 
+use cast::i64;
+use failure::Error;
+use failure::ResultExt;
 use octagon::FileFormat;
 use octagon::Operation;
 use regex::Regex;
-
-use errors::*;
 
 use u64_from;
 use usize_from;
@@ -15,24 +16,28 @@ pub enum Command {
     Ui,
 }
 
-pub fn parse<'a, I: Iterator<Item = &'a String>>(args: I) -> Result<Vec<Command>> {
+pub fn parse<'a, I: Iterator<Item = &'a String>>(args: I) -> Result<Vec<Command>, Error> {
     let mut matched = vec![];
     let mut args = args.peekable();
 
     while let Some(cmd) = args.next() {
-        let map = read_just_args(&mut args).chain_err(|| format!("finding args for {:?}", cmd))?;
+        let map = read_just_args(&mut args)
+            .with_context(|_| format_err!("finding args for {:?}", cmd))?;
 
-        matched.push(match cmd.as_str() {
-            "from" => parse_from(&mut args, no_duplicates(map)?),
-            "shift" => parse_shift(&mut args, no_duplicates(map)?),
-            "lowpass" => parse_lowpass(&mut args, no_duplicates(map)?),
-            "sparkfft" => parse_sparkfft(&mut args, no_duplicates(map)?),
-            "bucket" => parse_bucket(&mut args, no_duplicates(map)?),
-            "write" => parse_write(&mut args, no_duplicates(map)?),
-            "gen" => parse_gen(&mut args, map),
-            "ui" => parse_ui(&mut args, no_duplicates(map)?),
-            _ => Err("unrecognised command".into()),
-        }.chain_err(|| format!("processing command: {:?}", cmd))?);
+        matched.push(
+            match cmd.as_str() {
+                "from" => parse_from(&mut args, no_duplicates(map)?),
+                "shift" => parse_shift(&mut args, no_duplicates(map)?),
+                "lowpass" => parse_lowpass(&mut args, no_duplicates(map)?),
+                "sparkfft" => parse_sparkfft(&mut args, no_duplicates(map)?),
+                "bucket" => parse_bucket(&mut args, no_duplicates(map)?),
+                "write" => parse_write(&mut args, no_duplicates(map)?),
+                "gen" => parse_gen(&mut args, map),
+                "ui" => parse_ui(&mut args, no_duplicates(map)?),
+                _ => Err(format_err!("unrecognised command")),
+            }
+            .with_context(|_| format_err!("processing command: {:?}", cmd))?,
+        );
     }
 
     Ok(matched)
@@ -41,8 +46,10 @@ pub fn parse<'a, I: Iterator<Item = &'a String>>(args: I) -> Result<Vec<Command>
 fn parse_from<'a, I: Iterator<Item = &'a String>>(
     mut args: I,
     mut map: HashMap<String, String>,
-) -> Result<Command> {
-    let filename = args.next().ok_or("'from' requires a filename argument")?;
+) -> Result<Command, Error> {
+    let filename = args
+        .next()
+        .ok_or_else(|| format_err!("'from' requires a filename argument"))?;
 
     let provided_sample_rate = map.remove("sr");
     let provided_format = map.remove("format");
@@ -82,19 +89,21 @@ fn parse_from<'a, I: Iterator<Item = &'a String>>(
     }
 
     if let Some(provided) = provided_format {
-        format = Some(guess_from_extension(&provided)
-            .ok_or_else(|| format!("unrecognised extension: {:?}", provided))?);
+        format = Some(
+            guess_from_extension(&provided)
+                .ok_or_else(|| format_err!("unrecognised extension: {:?}", provided))?,
+        );
     }
 
     Ok(Command::Octagon(Operation::From {
         sample_rate: parse_si_u64(&sample_rate.ok_or_else(|| {
-            format!(
+            format_err!(
                 "unable to guess format from filename {:?}, please specify it",
                 filename
             )
         })?)?,
         format: format.ok_or_else(|| {
-            format!(
+            format_err!(
                 "unable to guess format from filename {:?}, please specify it",
                 filename
             )
@@ -106,26 +115,31 @@ fn parse_from<'a, I: Iterator<Item = &'a String>>(
 fn parse_shift<'a, I: Iterator<Item = &'a String>>(
     mut args: I,
     map: HashMap<String, String>,
-) -> Result<Command> {
+) -> Result<Command, Error> {
     ensure!(map.is_empty(), "'shift' has no named arguments");
 
     Ok(Command::Octagon(Operation::Shift {
-        frequency: parse_si_i64(args.next().ok_or("'shift' requires a frequency argument")?)?,
+        frequency: parse_si_i64(
+            args.next()
+                .ok_or_else(|| format_err!("'shift' requires a frequency argument"))?,
+        )?,
     }))
 }
 
 fn parse_lowpass<'a, I: Iterator<Item = &'a String>>(
     mut args: I,
     mut map: HashMap<String, String>,
-) -> Result<Command> {
-    let frequency: u64 = parse_si_u64(args.next()
-        .ok_or("'lowpass' requires a frequency argument")?)?;
+) -> Result<Command, Error> {
+    let frequency: u64 = parse_si_u64(
+        args.next()
+            .ok_or_else(|| format_err!("'lowpass' requires a frequency argument"))?,
+    )?;
 
     // TODO: much better defaults
     let size = match map.remove("power") {
         Some(val) => usize_from(parse_si_u64(&val)?)
             .checked_mul(2)
-            .ok_or("power is too large")?,
+            .ok_or_else(|| format_err!("power is too large"))?,
         None => 40,
     };
 
@@ -146,7 +160,7 @@ fn parse_lowpass<'a, I: Iterator<Item = &'a String>>(
 fn parse_sparkfft<'a, I: Iterator<Item = &'a String>>(
     _args: I,
     mut map: HashMap<String, String>,
-) -> Result<Command> {
+) -> Result<Command, Error> {
     let width = match map.remove("width") {
         Some(val) => usize_from(parse_si_u64(&val)?),
         None => 128,
@@ -159,8 +173,10 @@ fn parse_sparkfft<'a, I: Iterator<Item = &'a String>>(
 
     let (min, max) = match map.remove("range") {
         Some(val) => {
-            let (min, max) = val.split_at(val.find(':')
-                .ok_or_else(|| format!("range argument must contain a ':': '{}'", val))?);
+            let (min, max) = val.split_at(
+                val.find(':')
+                    .ok_or_else(|| format_err!("range argument must contain a ':': '{}'", val))?,
+            );
 
             let min: f32 = min.parse()?;
             let max: f32 = max.chars().skip(1).collect::<String>().parse()?;
@@ -183,9 +199,10 @@ fn parse_sparkfft<'a, I: Iterator<Item = &'a String>>(
 fn parse_bucket<'a, I: Iterator<Item = &'a String>>(
     mut args: I,
     mut map: HashMap<String, String>,
-) -> Result<Command> {
-    let levels = args.next()
-        .ok_or("bucket usage: bucket -by freq [number-of-buckets]")?
+) -> Result<Command, Error> {
+    let levels = args
+        .next()
+        .ok_or_else(|| format_err!("bucket usage: bucket -by freq [number-of-buckets]"))?
         .parse()?;
 
     let fft_width = match map.remove("width") {
@@ -215,7 +232,7 @@ fn parse_bucket<'a, I: Iterator<Item = &'a String>>(
 fn parse_write<'a, I: Iterator<Item = &'a String>>(
     mut args: I,
     mut map: HashMap<String, String>,
-) -> Result<Command> {
+) -> Result<Command, Error> {
     let overwrite = match map.remove("overwrite") {
         Some(val) => parse_bool(&val)?,
         None => false,
@@ -223,8 +240,9 @@ fn parse_write<'a, I: Iterator<Item = &'a String>>(
 
     ensure!(map.is_empty(), "invalid flags: {:?}", map.keys());
 
-    let prefix: String = args.next()
-        .ok_or("'lowpass' requires a frequency argument")?
+    let prefix: String = args
+        .next()
+        .ok_or_else(|| format_err!("'lowpass' requires a frequency argument"))?
         .to_string();
 
     Ok(Command::Octagon(Operation::Write { overwrite, prefix }))
@@ -233,25 +251,31 @@ fn parse_write<'a, I: Iterator<Item = &'a String>>(
 fn parse_gen<'a, I: Iterator<Item = &'a String>>(
     mut args: I,
     mut map: HashMap<String, Vec<String>>,
-) -> Result<Command> {
+) -> Result<Command, Error> {
     let cos: Vec<i64> = match map.remove("cos") {
-        Some(val) => val.into_iter()
+        Some(val) => val
+            .into_iter()
             .map(parse_si_i64)
-            .collect::<Result<Vec<i64>>>()
-            .chain_err(|| "parsing -cos")?,
+            .collect::<Result<Vec<i64>, Error>>()
+            .with_context(|_| format_err!("parsing -cos"))?,
         None => bail!("gen requires at least one operation"),
     };
 
     let seconds = match map.remove("len") {
-        Some(ref val) if val.len() == 1 => parse_si_f64(&val[0]).chain_err(|| "parsing len")?,
+        Some(ref val) if val.len() == 1 => {
+            parse_si_f64(&val[0]).with_context(|_| format_err!("parsing len"))?
+        }
         None => 1.0,
         _ => bail!("len requires exactly one value"),
     };
 
     ensure!(map.is_empty(), "invalid flags: {:?}", map.keys());
 
-    let sample_rate = parse_si_u64(args.next().ok_or("sample rate argument required")?)
-        .chain_err(|| "parsing sample rate")?;
+    let sample_rate = parse_si_u64(
+        args.next()
+            .ok_or_else(|| format_err!("sample rate argument required"))?,
+    )
+    .with_context(|_| format_err!("parsing sample rate"))?;
 
     Ok(Command::Octagon(Operation::Gen {
         sample_rate,
@@ -263,7 +287,7 @@ fn parse_gen<'a, I: Iterator<Item = &'a String>>(
 fn parse_ui<'a, I: Iterator<Item = &'a String>>(
     mut _args: I,
     map: HashMap<String, String>,
-) -> Result<Command> {
+) -> Result<Command, Error> {
     ensure!(map.is_empty(), "invalid flags: {:?}", map.keys());
 
     Ok(Command::Ui)
@@ -295,34 +319,34 @@ fn find_multiplication_suffix(from: &str) -> (&str, u32) {
     }
 }
 
-fn parse_si_i64<S: AsRef<str>>(from: S) -> Result<i64> {
+fn parse_si_i64<S: AsRef<str>>(from: S) -> Result<i64, Error> {
     let from = from.as_ref();
     let (val, mul) = find_multiplication_suffix(from);
-    let parsed: i64 = val.parse()
-        .chain_err(|| format!("parsing signed integer {:?}", from))?;
+    let parsed: i64 = val.parse()?;
+    //        .with_context(|_| format_err!("parsing signed integer {:?}", from))?;
     Ok(parsed
-        .checked_mul(i64::from(mul))
-        .ok_or_else(|| format!("unit is out of range: {}", from))?)
+        .checked_mul(i64(mul))
+        .ok_or_else(|| format_err!("unit is out of range: {}", from))?)
 }
 
-fn parse_si_u64(from: &str) -> Result<u64> {
+fn parse_si_u64(from: &str) -> Result<u64, Error> {
     let (val, mul) = find_multiplication_suffix(from);
-    let parsed: u64 = val.parse()
-        .chain_err(|| format!("parsing unsigned integer {:?}", from))?;
+    let parsed: u64 = val.parse()?;
+    //        .with_context(|_| format_err!("parsing unsigned integer {:?}", from))?;
     Ok(parsed
         .checked_mul(u64::from(mul))
-        .ok_or_else(|| format!("unit is out of range: {}", from))?)
+        .ok_or_else(|| format_err!("unit is out of range: {}", from))?)
 }
 
-fn parse_si_f64<S: AsRef<str>>(from: S) -> Result<f64> {
+fn parse_si_f64<S: AsRef<str>>(from: S) -> Result<f64, Error> {
     let from = from.as_ref();
     let (val, mul) = find_multiplication_suffix(from);
-    let parsed: f64 = val.parse()
-        .chain_err(|| format!("parsing float {:?}", from))?;
+    let parsed: f64 = val.parse()?;
+    //        .with_context(|_| format_err!("parsing float {:?}", from))?;
     Ok(parsed * f64::from(mul))
 }
 
-fn parse_bool(from: &str) -> Result<bool> {
+fn parse_bool(from: &str) -> Result<bool, Error> {
     match from.parse() {
         Ok(val) => Ok(val),
         Err(_) => match from {
@@ -345,7 +369,7 @@ fn guess_from_extension(ext: &str) -> Option<FileFormat> {
     })
 }
 
-fn read_just_args<'a, I>(iter: &mut Peekable<I>) -> Result<HashMap<String, Vec<String>>>
+fn read_just_args<'a, I>(iter: &mut Peekable<I>) -> Result<HashMap<String, Vec<String>>, Error>
 where
     I: Iterator<Item = &'a String>,
 {
@@ -388,7 +412,7 @@ where
     Ok(ret)
 }
 
-fn no_duplicates(map: HashMap<String, Vec<String>>) -> Result<HashMap<String, String>> {
+fn no_duplicates(map: HashMap<String, Vec<String>>) -> Result<HashMap<String, String>, Error> {
     let mut ret = HashMap::with_capacity(map.len());
     for (k, v) in map {
         ensure!(1 == v.len(), "'-{}' specified more than once: {:?}", k, v);

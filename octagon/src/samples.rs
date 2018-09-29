@@ -2,9 +2,9 @@ use std::io::Read;
 use std::io::Seek;
 use std::io::SeekFrom;
 
+use failure::Error;
 use rustfft::num_complex::Complex;
 
-use errors::*;
 use usize_from;
 
 pub trait Samples {
@@ -13,7 +13,7 @@ pub trait Samples {
 
     fn read_at(&mut self, off: u64, buf: &mut [Complex<f32>]) -> usize;
 
-    fn read_exact_at(&mut self, off: u64, buf: &mut [Complex<f32>]) -> Result<()> {
+    fn read_exact_at(&mut self, off: u64, buf: &mut [Complex<f32>]) -> Result<(), Error> {
         let wanted = buf.len();
         let got = self.read_at(off, buf);
         ensure!(

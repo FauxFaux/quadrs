@@ -1,26 +1,22 @@
 use conrod;
+use conrod::backend::glium::glium;
+use conrod::backend::glium::glium::Surface;
 use conrod::color;
+use conrod::glium::texture::ClientFormat;
+use conrod::glium::texture::RawImage2d;
 use conrod::text;
 use conrod::widget;
-
 use conrod::Borderable;
 use conrod::Colorable;
 use conrod::Labelable;
 use conrod::Positionable;
 use conrod::Sizeable;
 use conrod::Widget;
-
-use conrod::backend::glium::glium;
-use conrod::backend::glium::glium::Surface;
-
-use self::glium::texture::ClientFormat;
-use self::glium::texture::RawImage2d;
-
+use failure::Error;
 use palette;
 use rustfft::algorithm::Radix4;
 use rustfft::num_complex::Complex;
 
-use errors::*;
 use octagon::Samples;
 
 mod support;
@@ -34,7 +30,7 @@ struct Params {
     stretch: isize,
 }
 
-pub fn display(samples: &mut Samples) -> Result<()> {
+pub fn display(samples: &mut Samples) -> Result<(), Error> {
     const WIDTH: u32 = 800;
     const HEIGHT: u32 = 600;
 
@@ -50,9 +46,12 @@ pub fn display(samples: &mut Samples) -> Result<()> {
 
     // construct our `Ui`.
     let mut ui = conrod::UiBuilder::new([WIDTH as f64, HEIGHT as f64]).build();
-    ui.fonts.insert(text::FontCollection::from_bytes(
-        &include_bytes!("../../../assets/NotoSans-Regular.ttf")[..],
-    )?.into_font()?);
+    ui.fonts.insert(
+        text::FontCollection::from_bytes(
+            &include_bytes!("../../../assets/NotoSans-Regular.ttf")[..],
+        )?
+        .into_font()?,
+    );
 
     // A type used for converting `conrod::render::Primitives` into `Command`s that can be used
     // for drawing to the glium `Surface`.
@@ -299,7 +298,7 @@ impl MemImage {
     }
 }
 
-fn render(samples: &mut Samples, params: &Params) -> Result<Vec<(u8, u8, u8)>> {
+fn render(samples: &mut Samples, params: &Params) -> Result<Vec<(u8, u8, u8)>, Error> {
     let w = params.width as usize;
     let h = params.height as usize;
 
@@ -339,16 +338,19 @@ fn render(samples: &mut Samples, params: &Params) -> Result<Vec<(u8, u8, u8)>> {
             break;
         }
 
-        means.0 += out.iter()
+        means.0 += out
+            .iter()
             .take(params.fft_width / 2)
             .map(|v| v.norm())
             .sum::<f32>();
-        means.1 += out.iter()
+        means.1 += out
+            .iter()
             .skip(params.fft_width / 2)
             .map(|v| v.norm())
             .sum::<f32>();
 
-        for (o, v) in out.iter()
+        for (o, v) in out
+            .iter()
             .skip(params.fft_width / 2)
             .chain(out.iter().take(params.fft_width / 2))
             .enumerate()
@@ -417,7 +419,11 @@ fn render(samples: &mut Samples, params: &Params) -> Result<Vec<(u8, u8, u8)>> {
 }
 
 #[inline]
-fn fft_at(fft: &Radix4<f32>, samples: &mut Samples, sample_pos: u64) -> Result<Vec<Complex<f32>>> {
+fn fft_at(
+    fft: &Radix4<f32>,
+    samples: &mut Samples,
+    sample_pos: u64,
+) -> Result<Vec<Complex<f32>>, Error> {
     use rustfft::num_traits::identities::Zero;
     use rustfft::Length;
     use rustfft::FFT;

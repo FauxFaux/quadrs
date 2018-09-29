@@ -1,7 +1,8 @@
+extern crate cast;
 #[macro_use]
 extern crate conrod;
 #[macro_use]
-extern crate error_chain;
+extern crate failure;
 extern crate image;
 extern crate octagon;
 extern crate palette;
@@ -11,13 +12,10 @@ extern crate rusttype;
 
 use std::env;
 
+use failure::Error;
+
 mod args;
-mod errors;
 mod ui;
-
-use errors::*;
-
-quick_main!(run);
 
 fn usage(us: &str) {
     println!("usage: {} \\", us);
@@ -40,7 +38,7 @@ fn usage(us: &str) {
     println!();
 }
 
-fn run() -> Result<()> {
+fn main() -> Result<(), Error> {
     let args: Vec<String> = env::args().collect();
     let mut args = args.iter();
     let us = args.next().unwrap();
@@ -63,7 +61,11 @@ fn run() -> Result<()> {
         use args::Command::*;
         match command {
             Octagon(op) => samples = op.exec(samples)?,
-            Ui => ui::display(samples.as_mut().ok_or("ui requires an input FOR NOW")?)?,
+            Ui => ui::display(
+                samples
+                    .as_mut()
+                    .ok_or_else(|| format_err!("ui requires an input FOR NOW"))?,
+            )?,
         }
     }
 

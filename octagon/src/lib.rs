@@ -1,30 +1,28 @@
 extern crate byteorder;
 #[macro_use]
-extern crate error_chain;
+extern crate failure;
 extern crate num_complex;
 extern crate num_traits;
 extern crate rustfft;
 
-use std::fs;
-
-use std::f64::consts::PI;
-const TAU: f64 = PI * 2.;
-
-use byteorder::ByteOrder;
-
-use num_complex::Complex;
-use num_traits::identities::Zero;
-
 pub mod bits;
-mod errors;
 mod fft;
 mod filter;
 mod gen;
 mod samples;
 mod shift;
 
-pub use errors::*;
+use std::f64::consts::PI;
+use std::fs;
+
+use byteorder::ByteOrder;
+use failure::Error;
+use num_complex::Complex;
+use num_traits::identities::Zero;
+
 pub use samples::Samples;
+
+const TAU: f64 = PI * 2.;
 
 #[derive(Debug, Clone)]
 pub enum Operation {
@@ -79,7 +77,7 @@ pub enum FileFormat {
 }
 
 impl Operation {
-    pub fn exec(&self, mut samples: Option<Box<Samples>>) -> Result<Option<Box<Samples>>> {
+    pub fn exec(&self, mut samples: Option<Box<Samples>>) -> Result<Option<Box<Samples>>, Error> {
         use Operation::*;
         Ok(match *self {
             From {
@@ -97,7 +95,7 @@ impl Operation {
                 seconds,
             } => Some(Box::new(gen::Gen::new(cos.to_vec(), sample_rate, seconds)?)),
             Shift { frequency } => {
-                let orig = samples.ok_or("shift requires an input")?;
+                let orig = samples.ok_or_else(|| format_err!("shift requires an input"))?;
                 let sample_rate = orig.sample_rate();
                 Some(Box::new(shift::Shift::new(orig, frequency, sample_rate)))
             }
@@ -106,7 +104,7 @@ impl Operation {
                 decimate,
                 frequency,
             } => {
-                let orig = samples.ok_or("lowpass requires an input")?;
+                let orig = samples.ok_or_else(|| format_err!("lowpass requires an input"))?;
                 let original_sample_rate = orig.sample_rate();
                 Some(Box::new(filter::LowPass::new(
                     orig,
@@ -123,7 +121,9 @@ impl Operation {
                 max,
             } => {
                 fft::spark_fft(
-                    samples.as_mut().ok_or("sparkfft requires an input")?,
+                    samples
+                        .as_mut()
+                        .ok_or_else(|| format_err!("sparkfft requires an input"))?,
                     width,
                     stride,
                     min,
@@ -139,14 +139,17 @@ impl Operation {
                 println!(
                     "{}",
                     fft::freq_levels(
-                        samples.as_mut().ok_or("bucket -by freq requires an input")?,
+                        samples
+                            .as_mut()
+                            .ok_or_else(|| format_err!("bucket -by freq requires an input"))?,
                         fft_width,
                         stride,
                         levels
-                    ).vals
-                        .into_iter()
-                        .map(|x| format!("{}", x))
-                        .collect::<String>()
+                    )
+                    .vals
+                    .into_iter()
+                    .map(|x| format!("{}", x))
+                    .collect::<String>()
                 );
                 samples
             }
@@ -155,7 +158,9 @@ impl Operation {
                 ref prefix,
             } => {
                 do_write(
-                    samples.as_mut().ok_or("write requires an input")?,
+                    samples
+                        .as_mut()
+                        .ok_or_else(|| format_err!("write requires an input"))?,
                     overwrite,
                     prefix,
                 )?;
@@ -165,7 +170,7 @@ impl Operation {
     }
 }
 
-fn do_write(samples: &mut Samples, overwrite: bool, prefix: &str) -> Result<()> {
+fn do_write(samples: &mut Samples, overwrite: bool, prefix: &str) -> Result<(), Error> {
     if "-" == prefix {
         unimplemented!()
     }

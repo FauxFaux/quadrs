@@ -1,7 +1,7 @@
+use failure::Error;
 use rustfft::num_complex::Complex;
 use rustfft::num_traits::identities::Zero;
 
-use errors::*;
 use samples::Samples;
 
 use TAU;
@@ -13,7 +13,7 @@ pub struct Gen {
 }
 
 impl Gen {
-    pub fn new(cos: Vec<i64>, sample_rate: u64, seconds: f64) -> Result<Self> {
+    pub fn new(cos: Vec<i64>, sample_rate: u64, seconds: f64) -> Result<Self, Error> {
         ensure!(!cos.is_empty(), "cos cannot be empty");
         ensure!(0 != sample_rate, "sample rate may not be zero");
         ensure!(seconds > 0.0, "seconds may not be <= 0");
