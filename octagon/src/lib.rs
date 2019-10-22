@@ -77,7 +77,10 @@ pub enum FileFormat {
 }
 
 impl Operation {
-    pub fn exec(&self, mut samples: Option<Box<Samples>>) -> Result<Option<Box<Samples>>, Error> {
+    pub fn exec(
+        &self,
+        mut samples: Option<Box<dyn Samples>>,
+    ) -> Result<Option<Box<dyn Samples>>, Error> {
         use Operation::*;
         Ok(match *self {
             From {
@@ -170,13 +173,12 @@ impl Operation {
     }
 }
 
-fn do_write(samples: &mut Samples, overwrite: bool, prefix: &str) -> Result<(), Error> {
+fn do_write(samples: &mut dyn Samples, overwrite: bool, prefix: &str) -> Result<(), Error> {
     if "-" == prefix {
         unimplemented!()
     }
 
     use byteorder::WriteBytesExt;
-    use std::fs;
     use std::io;
 
     let mut options = fs::OpenOptions::new();

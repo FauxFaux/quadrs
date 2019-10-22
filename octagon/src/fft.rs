@@ -12,7 +12,7 @@ use u64_from;
 use usize_from;
 
 pub fn spark_fft(
-    samples: &mut Samples,
+    samples: &mut dyn Samples,
     fft_width: usize,
     stride: u64,
     min: Option<f32>,
@@ -82,7 +82,12 @@ pub struct Levels {
 }
 
 /// `len/decimate` total to return. Need to read every `decimate`, and for `fft_width`?
-pub fn freq_levels(samples: &mut Samples, fft_width: usize, stride: u64, levels: usize) -> Levels {
+pub fn freq_levels(
+    samples: &mut dyn Samples,
+    fft_width: usize,
+    stride: u64,
+    levels: usize,
+) -> Levels {
     assert_eq!(2, levels, "only supporting two levels for now");
 
     let fft = Radix4::new(fft_width, false);

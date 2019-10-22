@@ -105,7 +105,7 @@ mod tests {
                  00000111111110101"#,
         );
 
-        let (err, val) = scan(&inp, 4.8);
+        let (_err, val) = scan(&inp, 4.8);
         println!("{}", super::fmt(&val));
         for off in 0..8 {
             println!("{:?}", decode(&val[off..]));
@@ -127,7 +127,6 @@ mod tests {
             })
             .collect()
     }
-
 }
 
 fn fmt(bits: &[bool]) -> String {
