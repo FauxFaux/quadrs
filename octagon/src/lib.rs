@@ -20,7 +20,7 @@ use failure::Error;
 use num_complex::Complex;
 use num_traits::identities::Zero;
 
-pub use samples::Samples;
+pub use crate::samples::Samples;
 
 const TAU: f64 = PI * 2.;
 
@@ -28,7 +28,7 @@ const TAU: f64 = PI * 2.;
 pub enum Operation {
     From {
         sample_rate: u64,
-        format: ::FileFormat,
+        format: crate::FileFormat,
         filename: String,
     },
     Shift {
@@ -81,7 +81,7 @@ impl Operation {
         &self,
         mut samples: Option<Box<dyn Samples>>,
     ) -> Result<Option<Box<dyn Samples>>, Error> {
-        use Operation::*;
+        use crate::Operation::*;
         Ok(match *self {
             From {
                 ref filename,
@@ -212,7 +212,7 @@ fn do_write(samples: &mut dyn Samples, overwrite: bool, prefix: &str) -> Result<
 
 impl FileFormat {
     fn type_bytes(&self) -> u64 {
-        use FileFormat::*;
+        use crate::FileFormat::*;
         match *self {
             ComplexFloat32 => 4,
             ComplexInt8 | ComplexUint8 => 1,
@@ -233,8 +233,8 @@ impl FileFormat {
     }
 
     fn to_f32(&self, buf: &[u8]) -> f32 {
+        use crate::FileFormat::*;
         use byteorder::LittleEndian;
-        use FileFormat::*;
 
         assert_eq!(self.type_bytes(), buf.len() as u64);
 

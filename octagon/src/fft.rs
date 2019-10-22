@@ -6,10 +6,10 @@ use num_traits::identities::Zero;
 use rustfft::algorithm::Radix4;
 use rustfft::FFT;
 
-use samples::Samples;
+use crate::samples::Samples;
 
-use u64_from;
-use usize_from;
+use crate::u64_from;
+use crate::usize_from;
 
 pub fn spark_fft(
     samples: &mut dyn Samples,

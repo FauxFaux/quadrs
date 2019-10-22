@@ -1,4 +1,4 @@
-use usize_from;
+use crate::usize_from;
 
 fn decode(data: &[bool]) -> String {
     let mut data = data.into_iter().cloned();

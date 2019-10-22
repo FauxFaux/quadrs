@@ -5,7 +5,7 @@ use std::io::SeekFrom;
 use failure::Error;
 use rustfft::num_complex::Complex;
 
-use usize_from;
+use crate::usize_from;
 
 pub trait Samples {
     fn len(&self) -> u64;
@@ -41,7 +41,7 @@ impl<T: Samples + ?Sized> Samples for Box<T> {
 }
 
 pub struct SampleFile<R> {
-    format: ::FileFormat,
+    format: crate::FileFormat,
     file_len: u64,
     inner: R,
     sample_rate: u64,
@@ -51,7 +51,7 @@ impl<R> SampleFile<R>
 where
     R: Read + Seek,
 {
-    pub fn new(mut inner: R, format: ::FileFormat, sample_rate: u64) -> Self {
+    pub fn new(mut inner: R, format: crate::FileFormat, sample_rate: u64) -> Self {
         let file_len = inner.seek(SeekFrom::End(0)).expect("seeking to end");
         SampleFile {
             inner,

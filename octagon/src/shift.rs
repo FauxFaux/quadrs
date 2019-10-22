@@ -1,8 +1,8 @@
-use TAU;
+use crate::TAU;
 
 use rustfft::num_complex::Complex;
 
-use samples::Samples;
+use crate::samples::Samples;
 
 pub struct Shift<S> {
     inner: S,

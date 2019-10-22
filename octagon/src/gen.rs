@@ -2,9 +2,9 @@ use failure::Error;
 use rustfft::num_complex::Complex;
 use rustfft::num_traits::identities::Zero;
 
-use samples::Samples;
+use crate::samples::Samples;
 
-use TAU;
+use crate::TAU;
 
 pub struct Gen {
     sample_rate: u64,
