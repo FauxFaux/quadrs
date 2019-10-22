@@ -9,8 +9,5 @@ failure = "0.1"
 num-complex = "0.2"
 num-traits = "0.2"
 regex = "1"
+rustfft = "3"
 
-[dependencies.rustfft]
-# 2.1.0 + num-complex 0.2: https://github.com/awelkie/RustFFT/pull/38
-git = "https://github.com/FauxFaux/RustFFT"
-rev = "4fa13257e41b9189557ab6c5f88ea2485eb0cbf0"

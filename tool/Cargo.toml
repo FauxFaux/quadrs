@@ -6,19 +6,15 @@ authors = ["Chris West (Faux) <git@goeswhere.com>"]
 [dependencies]
 cast = "0.2"
 failure = "0.1"
-image = "0.20"
+image = "0.22"
 palette = "0.4"
 regex = "1"
-rusttype = "0.7"
+rustfft = "3"
+rusttype = "0.8"
 
 [dependencies.conrod]
 version = "0.61"
 features = ["glium", "winit"]
-
-[dependencies.rustfft]
-# 2.1.0 + num-complex 0.2: https://github.com/awelkie/RustFFT/pull/38
-git = "https://github.com/FauxFaux/RustFFT"
-rev = "4fa13257e41b9189557ab6c5f88ea2485eb0cbf0"
 
 [dependencies.octagon]
 path = "../octagon"
