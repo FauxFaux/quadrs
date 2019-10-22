@@ -58,7 +58,7 @@ fn main() -> Result<(), Error> {
 
     let mut samples = None;
     for command in commands {
-        use args::Command::*;
+        use crate::args::Command::*;
         match command {
             Octagon(op) => samples = op.exec(samples)?,
             Ui => ui::display(
