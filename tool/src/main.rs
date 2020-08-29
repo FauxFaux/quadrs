@@ -1,14 +1,7 @@
-extern crate cast;
 #[macro_use]
 extern crate conrod;
 #[macro_use]
 extern crate failure;
-extern crate image;
-extern crate octagon;
-extern crate palette;
-extern crate regex;
-extern crate rustfft;
-extern crate rusttype;
 
 use std::env;
 

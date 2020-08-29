@@ -1,9 +1,7 @@
 use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::iter::Peekable;
 
-use cast::i64;
-use cast::u64;
-use cast::usize;
 use failure::Error;
 use failure::ResultExt;
 use octagon::FileFormat;
@@ -136,7 +134,7 @@ fn parse_lowpass<'a, I: Iterator<Item = &'a String>>(
 
     // TODO: much better defaults
     let size = match map.remove("power") {
-        Some(val) => usize(parse_si_u64(&val)?)
+        Some(val) => usize::try_from(parse_si_u64(&val)?)?
             .checked_mul(2)
             .ok_or_else(|| format_err!("power is too large"))?,
         None => 40,
@@ -161,13 +159,13 @@ fn parse_sparkfft<'a, I: Iterator<Item = &'a String>>(
     mut map: HashMap<String, String>,
 ) -> Result<Command, Error> {
     let width = match map.remove("width") {
-        Some(val) => usize(parse_si_u64(&val)?),
+        Some(val) => usize::try_from(parse_si_u64(&val)?)?,
         None => 128,
     };
 
     let stride = match map.remove("stride") {
         Some(val) => parse_si_u64(&val)?,
-        None => u64(width),
+        None => u64::try_from(width)?,
     };
 
     let (min, max) = match map.remove("range") {
@@ -205,13 +203,13 @@ fn parse_bucket<'a, I: Iterator<Item = &'a String>>(
         .parse()?;
 
     let fft_width = match map.remove("width") {
-        Some(val) => usize(parse_si_u64(&val)?),
+        Some(val) => usize::try_from(parse_si_u64(&val)?)?,
         None => 128,
     };
 
     let stride = match map.remove("stride") {
         Some(val) => parse_si_u64(&val)?,
-        None => u64(fft_width),
+        None => u64::try_from(fft_width)?,
     };
 
     match map.remove("by") {
@@ -324,7 +322,7 @@ fn parse_si_i64<S: AsRef<str>>(from: S) -> Result<i64, Error> {
     let parsed: i64 = val.parse()?;
     //        .with_context(|_| format_err!("parsing signed integer {:?}", from))?;
     Ok(parsed
-        .checked_mul(i64(mul))
+        .checked_mul(i64::try_from(mul)?)
         .ok_or_else(|| format_err!("unit is out of range: {}", from))?)
 }
 
