@@ -1,6 +1,6 @@
 use std::mem;
 
-use failure::Error;
+use anyhow::Error;
 use num_complex::Complex;
 use num_traits::identities::Zero;
 use rustfft::algorithm::Radix4;

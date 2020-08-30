@@ -6,7 +6,7 @@ authors = ["Chris West (Faux) <git@goeswhere.com>"]
 edition = "2018"
 
 [dependencies]
-failure = "0.1"
+anyhow = "1"
 image = "0.22"
 palette = "0.4"
 regex = "1"

@@ -1,4 +1,5 @@
-use failure::Error;
+use anyhow::ensure;
+use anyhow::Error;
 use rustfft::num_complex::Complex;
 use rustfft::num_traits::identities::Zero;
 

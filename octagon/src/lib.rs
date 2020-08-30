@@ -1,10 +1,3 @@
-extern crate byteorder;
-#[macro_use]
-extern crate failure;
-extern crate num_complex;
-extern crate num_traits;
-extern crate rustfft;
-
 pub mod bits;
 mod fft;
 mod filter;
@@ -15,8 +8,9 @@ mod shift;
 use std::f64::consts::PI;
 use std::fs;
 
+use anyhow::anyhow;
+use anyhow::Error;
 use byteorder::ByteOrder;
-use failure::Error;
 use num_complex::Complex;
 use num_traits::identities::Zero;
 
@@ -98,7 +92,7 @@ impl Operation {
                 seconds,
             } => Some(Box::new(gen::Gen::new(cos.to_vec(), sample_rate, seconds)?)),
             Shift { frequency } => {
-                let orig = samples.ok_or_else(|| format_err!("shift requires an input"))?;
+                let orig = samples.ok_or_else(|| anyhow!("shift requires an input"))?;
                 let sample_rate = orig.sample_rate();
                 Some(Box::new(shift::Shift::new(orig, frequency, sample_rate)))
             }
@@ -107,7 +101,7 @@ impl Operation {
                 decimate,
                 frequency,
             } => {
-                let orig = samples.ok_or_else(|| format_err!("lowpass requires an input"))?;
+                let orig = samples.ok_or_else(|| anyhow!("lowpass requires an input"))?;
                 let original_sample_rate = orig.sample_rate();
                 Some(Box::new(filter::LowPass::new(
                     orig,
@@ -126,7 +120,7 @@ impl Operation {
                 fft::spark_fft(
                     samples
                         .as_mut()
-                        .ok_or_else(|| format_err!("sparkfft requires an input"))?,
+                        .ok_or_else(|| anyhow!("sparkfft requires an input"))?,
                     width,
                     stride,
                     min,
@@ -144,7 +138,7 @@ impl Operation {
                     fft::freq_levels(
                         samples
                             .as_mut()
-                            .ok_or_else(|| format_err!("bucket -by freq requires an input"))?,
+                            .ok_or_else(|| anyhow!("bucket -by freq requires an input"))?,
                         fft_width,
                         stride,
                         levels
@@ -163,7 +157,7 @@ impl Operation {
                 do_write(
                     samples
                         .as_mut()
-                        .ok_or_else(|| format_err!("write requires an input"))?,
+                        .ok_or_else(|| anyhow!("write requires an input"))?,
                     overwrite,
                     prefix,
                 )?;

@@ -1,3 +1,5 @@
+use anyhow::ensure;
+use anyhow::Error;
 use conrod;
 use conrod::backend::glium::glium;
 use conrod::backend::glium::glium::Surface;
@@ -12,7 +14,6 @@ use conrod::Labelable;
 use conrod::Positionable;
 use conrod::Sizeable;
 use conrod::Widget;
-use failure::Error;
 use palette;
 use rustfft::algorithm::Radix4;
 use rustfft::num_complex::Complex;

@@ -1,11 +1,11 @@
 #[macro_use]
 extern crate conrod;
-#[macro_use]
-extern crate failure;
 
 use std::env;
 
-use failure::Error;
+use anyhow::anyhow;
+use anyhow::bail;
+use anyhow::Error;
 
 mod args;
 mod ui;
@@ -57,7 +57,7 @@ fn main() -> Result<(), Error> {
             Ui => ui::display(
                 samples
                     .as_mut()
-                    .ok_or_else(|| format_err!("ui requires an input FOR NOW"))?,
+                    .ok_or_else(|| anyhow!("ui requires an input FOR NOW"))?,
             )?,
         }
     }

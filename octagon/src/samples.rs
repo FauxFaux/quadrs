@@ -2,7 +2,8 @@ use std::io::Read;
 use std::io::Seek;
 use std::io::SeekFrom;
 
-use failure::Error;
+use anyhow::ensure;
+use anyhow::Error;
 use rustfft::num_complex::Complex;
 
 use crate::usize_from;
