@@ -7,7 +7,7 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1"
-image = "0.22"
+image = "0.23"
 palette = "0.4"
 regex = "1"
 rustfft = "3"
