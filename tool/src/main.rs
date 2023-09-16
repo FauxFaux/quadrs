@@ -1,5 +1,9 @@
 #[macro_use]
-extern crate conrod;
+extern crate conrod_core;
+#[macro_use]
+extern crate conrod_glium;
+#[macro_use]
+extern crate conrod_winit;
 
 use std::env;
 

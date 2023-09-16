@@ -1,7 +1,5 @@
 use std;
 
-use conrod::backend::glium::glium;
-
 pub struct EventLoop {
     ui_needs_update: bool,
     last_update: std::time::Instant,

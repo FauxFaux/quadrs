@@ -1,23 +1,14 @@
 use anyhow::ensure;
 use anyhow::Error;
-use conrod;
-use conrod::backend::glium::glium;
-use conrod::backend::glium::glium::Surface;
-use conrod::color;
-use conrod::glium::texture::ClientFormat;
-use conrod::glium::texture::RawImage2d;
-use conrod::text;
-use conrod::widget;
-use conrod::Borderable;
-use conrod::Colorable;
-use conrod::Labelable;
-use conrod::Positionable;
-use conrod::Sizeable;
-use conrod::Widget;
+use conrod_core::{
+    self, color, text, widget, Borderable, Colorable, Labelable, Positionable, Sizeable, Widget,
+};
+use glium::texture::{ClientFormat, RawImage2d};
+use glium::Surface;
 use palette;
 use rustfft::algorithm::Radix4;
-use rustfft::FftDirection;
 use rustfft::num_complex::Complex;
+use rustfft::FftDirection;
 
 use octagon::Samples;
 
@@ -47,7 +38,7 @@ pub fn display(samples: &mut dyn Samples) -> Result<(), Error> {
     let display = glium::Display::new(window, context, &events_loop).unwrap();
 
     // construct our `Ui`.
-    let mut ui = conrod::UiBuilder::new([WIDTH as f64, HEIGHT as f64]).build();
+    let mut ui = conrod_core::UiBuilder::new([WIDTH as f64, HEIGHT as f64]).build();
     ui.fonts.insert(
         text::FontCollection::from_bytes(
             &include_bytes!("../../../assets/NotoSans-Regular.ttf")[..],
@@ -55,9 +46,9 @@ pub fn display(samples: &mut dyn Samples) -> Result<(), Error> {
         .into_font()?,
     );
 
-    // A type used for converting `conrod::render::Primitives` into `Command`s that can be used
+    // A type used for converting `conrod_core::render::Primitives` into `Command`s that can be used
     // for drawing to the glium `Surface`.
-    let mut renderer = conrod::backend::glium::Renderer::new(&display).unwrap();
+    let mut renderer = conrod_glium::Renderer::new(&display).unwrap();
 
     // The `WidgetId` for our background and `Image` widgets.
     widget_ids!(struct Ids {
@@ -88,7 +79,7 @@ pub fn display(samples: &mut dyn Samples) -> Result<(), Error> {
 
     let mut prev_params = params;
 
-    let mut image_map = conrod::image::Map::<glium::texture::Texture2d>::new();
+    let mut image_map = conrod_core::image::Map::<glium::texture::Texture2d>::new();
     let mut canvas_img = None;
 
     // Poll events from the window.
@@ -97,7 +88,9 @@ pub fn display(samples: &mut dyn Samples) -> Result<(), Error> {
         // Handle all events.
         for event in event_loop.next(&mut events_loop) {
             // Use the `winit` backend feature to convert the winit event to a conrod one.
-            if let Some(event) = conrod::backend::winit::convert_event(event.clone(), &display) {
+            if let Some(event) =
+                conrod_winit::convert_event(event.clone(), display.gl_window().window())
+            {
                 ui.handle_event(event);
             }
 
