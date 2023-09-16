@@ -686,11 +686,10 @@ dependencies = [
 
 [[package]]
 name = "num-complex"
-version = "0.2.4"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6b19411a9719e753aff12e5187b74d60d3dc449ec3f4dc21e3989c3f554bc95"
+checksum = "747d632c0c558b87dbabbe6a82f3b4ae03720d0646ac5b7b4dae89394be5f2c5"
 dependencies = [
- "autocfg 1.1.0",
  "num-traits 0.2.16",
 ]
 
@@ -801,7 +800,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "byteorder",
- "num-complex 0.2.4",
+ "num-complex 0.3.1",
  "num-traits 0.2.16",
  "regex",
  "rustfft",
@@ -1287,11 +1286,11 @@ dependencies = [
 
 [[package]]
 name = "rustfft"
-version = "3.0.1"
+version = "4.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77008ed59a8923c8b4ac2e5eaa6d28fbe893d3b9515098a4a5fc7767d6430fe5"
+checksum = "f107ffb2ec15915d932b7b1537fe4d6efb36955ee2b06f8f759c80a0725f80b1"
 dependencies = [
- "num-complex 0.2.4",
+ "num-complex 0.3.1",
  "num-integer",
  "num-traits 0.2.16",
  "strength_reduce",
@@ -1533,9 +1532,13 @@ dependencies = [
 
 [[package]]
 name = "transpose"
-version = "0.1.0"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "643e21580bb0627c7bb09e5cedbb42c8705b19d012de593ed6b0309270b3cd1e"
+checksum = "e6522d49d03727ffb138ae4cbc1283d3774f0d10aa7f9bf52e6784c45daf9b23"
+dependencies = [
+ "num-integer",
+ "strength_reduce",
+]
 
 [[package]]
 name = "unicode-ident"

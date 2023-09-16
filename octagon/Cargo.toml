@@ -8,8 +8,8 @@ edition = "2018"
 [dependencies]
 anyhow = "1"
 byteorder = "1"
-num-complex = "0.2"
+num-complex = "0.3"
 num-traits = "0.2"
 regex = "1"
-rustfft = "3"
+rustfft = "4"
 
