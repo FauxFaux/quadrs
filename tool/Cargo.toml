@@ -13,9 +13,9 @@ regex = "1"
 rustfft = "6"
 rusttype = "0.8"
 
-conrod_core = "0.66"
-conrod_glium = "0.66"
-conrod_winit = "0.66"
+conrod_core = "0.67"
+conrod_glium = "0.67"
+conrod_winit = "0.67"
 glium = "0.24"
 winit = "0.19"
 
