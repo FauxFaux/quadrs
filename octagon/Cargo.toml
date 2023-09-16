@@ -11,5 +11,5 @@ byteorder = "1"
 num-complex = "0.3"
 num-traits = "0.2"
 regex = "1"
-rustfft = "4"
+rustfft = "5"
 

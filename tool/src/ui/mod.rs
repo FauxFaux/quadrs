@@ -16,6 +16,7 @@ use conrod::Sizeable;
 use conrod::Widget;
 use palette;
 use rustfft::algorithm::Radix4;
+use rustfft::FftDirection;
 use rustfft::num_complex::Complex;
 
 use octagon::Samples;
@@ -312,7 +313,7 @@ fn render(samples: &mut dyn Samples, params: &Params) -> Result<Vec<(u8, u8, u8)
         height: h,
     };
 
-    let fft = Radix4::<f32>::new(params.fft_width, false);
+    let fft = Radix4::<f32>::new(params.fft_width, FftDirection::Forward);
 
     ensure!(params.stretch > 0, "TODO: negative stretching");
     let stretch = params.stretch as usize;
@@ -427,16 +428,13 @@ fn fft_at(
     sample_pos: u64,
 ) -> Result<Vec<Complex<f32>>, Error> {
     use rustfft::num_traits::identities::Zero;
+    use rustfft::Fft;
     use rustfft::Length;
-    use rustfft::FFT;
 
     let fft_width = fft.len();
-    let mut out = vec![Complex::zero(); fft_width];
-    {
-        let mut inp = vec![Complex::zero(); fft_width];
-        samples.read_exact_at(sample_pos, &mut inp)?;
-        fft.process(&mut inp, &mut out);
-    }
+    let mut inp = vec![Complex::zero(); fft_width];
+    samples.read_exact_at(sample_pos, &mut inp)?;
+    fft.process(&mut inp);
 
-    Ok(out)
+    Ok(inp)
 }

@@ -1,10 +1,8 @@
-use std::mem;
-
 use anyhow::Error;
 use num_complex::Complex;
 use num_traits::identities::Zero;
 use rustfft::algorithm::Radix4;
-use rustfft::FFT;
+use rustfft::{Fft, FftDirection};
 
 use crate::samples::Samples;
 
@@ -24,19 +22,14 @@ pub fn spark_fft(
     let min = min.unwrap_or(0.08);
     let max = max.unwrap_or(1.);
 
-    let fft_width = fft_width as usize;
-
-    let fft = Radix4::new(fft_width as usize, false);
+    let fft = Radix4::new(fft_width, FftDirection::Forward);
 
     let mut i = 0;
     while i < (samples.len() - fft_width as u64) {
         let mut inp = vec![Complex::zero(); fft_width];
         samples.read_exact_at(i, &mut inp)?;
 
-        let mut out = vec![Complex::zero(); fft_width];
-
-        fft.process(&mut inp, &mut out);
-        mem::drop(inp); // inp is now junk
+        fft.process(&mut inp);
 
         let top = '█';
         let bot = ' ';
@@ -51,10 +44,10 @@ pub fn spark_fft(
 
         let distinction = (max - min) / (graph.len() as f32);
         let mut buf = String::with_capacity(fft_width);
-        for val in out
+        for val in inp
             .iter()
             .skip(fft_width / 2)
-            .chain(out.iter().take(fft_width / 2))
+            .chain(inp.iter().take(fft_width / 2))
         {
             let norm = val.norm();
             if norm < min {
@@ -90,7 +83,7 @@ pub fn freq_levels(
 ) -> Levels {
     assert_eq!(2, levels, "only supporting two levels for now");
 
-    let fft = Radix4::new(fft_width, false);
+    let fft = Radix4::new(fft_width, FftDirection::Forward);
     let total = (samples.len() - u64_from(fft_width)) / stride;
     let mut vals = Vec::with_capacity(usize_from(total));
 
@@ -98,12 +91,10 @@ pub fn freq_levels(
         let mut inp = vec![Complex::zero(); fft_width];
         samples.read_exact_at(reading * stride, &mut inp).unwrap();
 
-        let mut out = vec![Complex::zero(); fft_width];
-        fft.process(&mut inp, &mut out);
-        mem::drop(inp);
+        fft.process(&mut inp);
 
-        let first: f32 = out.iter().take(fft_width / 2).map(|c| c.norm()).sum();
-        let second: f32 = out.iter().skip(fft_width / 2).map(|c| c.norm()).sum();
+        let first: f32 = inp.iter().take(fft_width / 2).map(|c| c.norm()).sum();
+        let second: f32 = inp.iter().skip(fft_width / 2).map(|c| c.norm()).sum();
         vals.push(if first < second { 0 } else { 1 });
     }
 
