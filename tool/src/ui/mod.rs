@@ -82,6 +82,23 @@ pub fn display(samples: &mut dyn Samples) -> Result<(), Error> {
     let mut image_map = conrod_core::image::Map::<glium::texture::Texture2d>::new();
     let mut canvas_img = None;
 
+
+    // A wrapper around the winit window that allows us to implement the trait necessary for enabling
+// the winit <-> conrod conversion functions.
+    struct WindowRef<'a>(&'a winit::Window);
+
+    // Implement the `WinitWindow` trait for `WindowRef` to allow for generating compatible conversion
+// functions.
+    impl<'a> conrod_winit::WinitWindow for WindowRef<'a> {
+        fn get_inner_size(&self) -> Option<(u32, u32)> {
+            winit::Window::get_inner_size(&self.0).map(Into::into)
+        }
+        fn hidpi_factor(&self) -> f32 {
+            winit::Window::get_hidpi_factor(&self.0) as _
+        }
+    }
+    conrod_winit::conversion_fns!();
+
     // Poll events from the window.
     let mut event_loop = support::EventLoop::new();
     'main: loop {
@@ -89,7 +106,7 @@ pub fn display(samples: &mut dyn Samples) -> Result<(), Error> {
         for event in event_loop.next(&mut events_loop) {
             // Use the `winit` backend feature to convert the winit event to a conrod one.
             if let Some(event) =
-                conrod_winit::convert_event(event.clone(), display.gl_window().window())
+                convert_event(event.clone(), &WindowRef(display.gl_window().window()))
             {
                 ui.handle_event(event);
             }
