@@ -13,10 +13,12 @@ regex = "1"
 rustfft = "6"
 rusttype = "0.8"
 
-conrod_core = "0.62"
-conrod_glium = "0.62"
-conrod_winit = "0.62"
+conrod_core = "0.63"
+conrod_glium = "0.63"
+conrod_winit = "0.63"
 glium = "0.23"
+#glium = "0.24"
+winit = "0.18"
 
 [dependencies.octagon]
 path = "../octagon"

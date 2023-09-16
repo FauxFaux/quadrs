@@ -184,9 +184,9 @@ checksum = "3d7b894f5411737b7867f4827955924d7c254fc9f4d91a6aad6b097804b1018b"
 
 [[package]]
 name = "conrod_core"
-version = "0.62.0"
+version = "0.63.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15b3bbc919cd03eb86bfe72b2420e7c77b9d61eecd5e82ab2c448221543a475a"
+checksum = "c13ae07abf682dc5cc51f48adca531473a74348b93bcfa088953168199ac899f"
 dependencies = [
  "conrod_derive",
  "daggy",
@@ -198,20 +198,20 @@ dependencies = [
 
 [[package]]
 name = "conrod_derive"
-version = "0.62.0"
+version = "0.63.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2216fbf9f3e0de473cb72babc362b1c445c24f8a3e74e7cd7be296381b3954e6"
+checksum = "aadc989d34015ed114ec7bc15e8c5568a4e4258d2e14ae4ed13b18995f4ddbc5"
 dependencies = [
  "proc-macro2 0.4.30",
  "quote 0.6.13",
- "syn 0.14.9",
+ "syn 0.15.44",
 ]
 
 [[package]]
 name = "conrod_glium"
-version = "0.62.0"
+version = "0.63.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a3bbe8999e63b0be694e7e66415bee8c293237442fd9fa36d0c10c2722a7017"
+checksum = "d014d2ab27508b58c4c800699b6d3e8adcc9d2244967bf0cf4c582c6688f9168"
 dependencies = [
  "conrod_core",
  "glium",
@@ -219,9 +219,9 @@ dependencies = [
 
 [[package]]
 name = "conrod_winit"
-version = "0.62.0"
+version = "0.63.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cee37fc94549190e69366d962984589bef4de951ffdc074c666fd1faca1ad8dc"
+checksum = "b5975f29ccbe2a0c2257e9c19d18f21d0d907195a86350bb4c4c999d8bd05acb"
 dependencies = [
  "conrod_core",
  "winit",
@@ -965,9 +965,9 @@ dependencies = [
 
 [[package]]
 name = "pistoncore-input"
-version = "0.23.0"
+version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df15a3c7468e3a18996f35127191a9c9e85542c3591efde556b179aca9f94e47"
+checksum = "0c612ce242c7bac8e96426a0ca34275fd980af440f0cca7c6c0e840ef8a4052f"
 dependencies = [
  "bitflags",
  "piston-viewport",
@@ -1035,6 +1035,7 @@ dependencies = [
  "regex",
  "rustfft",
  "rusttype 0.8.3",
+ "winit",
 ]
 
 [[package]]
