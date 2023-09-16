@@ -193,9 +193,9 @@ checksum = "3d7b894f5411737b7867f4827955924d7c254fc9f4d91a6aad6b097804b1018b"
 
 [[package]]
 name = "conrod_core"
-version = "0.68.0"
+version = "0.69.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ac87f83cf16c777d7c7b151afaa026d49e30d539caae132314623c33f134716"
+checksum = "e1aab7eec9304529930c9a7d91890e1304038ef2a75e10e524eed8c6c836ee15"
 dependencies = [
  "conrod_derive",
  "copypasta",
@@ -204,25 +204,25 @@ dependencies = [
  "instant",
  "num",
  "pistoncore-input",
- "rusttype 0.7.9",
+ "rusttype 0.8.3",
 ]
 
 [[package]]
 name = "conrod_derive"
-version = "0.68.0"
+version = "0.69.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75026ac0476a5016cfa00504dbe4bc5883c81a4a42d9621a62969c6c84f65b9e"
+checksum = "6dc5bc274991254246bea0d0ad20e77b1ac17c38fff0e5e3de070be6fd73d561"
 dependencies = [
- "proc-macro2 0.4.30",
- "quote 0.6.13",
- "syn 0.15.44",
+ "proc-macro2 1.0.67",
+ "quote 1.0.33",
+ "syn 1.0.109",
 ]
 
 [[package]]
 name = "conrod_glium"
-version = "0.68.0"
+version = "0.69.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c20f48f8de37cabecd3554feb76297208f8abcbfab9547d8b003070b8c1af462"
+checksum = "fc7d4d50ece9eac6d96eef900cd963b19c01c07710fcf034b4e18d8332443eac"
 dependencies = [
  "conrod_core",
  "glium",
@@ -230,9 +230,9 @@ dependencies = [
 
 [[package]]
 name = "conrod_winit"
-version = "0.68.0"
+version = "0.69.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "139e5db60ce2a13d763a7ced88236fe3106338321a8b383f2b272d0021d75d24"
+checksum = "efd588b214393f86533303b8322562afb50c7ab7a406e541909c6afb7fb3337a"
 
 [[package]]
 name = "copypasta"
@@ -1589,6 +1589,17 @@ dependencies = [
  "proc-macro2 0.4.30",
  "quote 0.6.13",
  "unicode-xid",
+]
+
+[[package]]
+name = "syn"
+version = "1.0.109"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72b64191b275b66ffe2469e8af2c1cfe3bafa67b529ead792a6d0160888b4237"
+dependencies = [
+ "proc-macro2 1.0.67",
+ "quote 1.0.33",
+ "unicode-ident",
 ]
 
 [[package]]
