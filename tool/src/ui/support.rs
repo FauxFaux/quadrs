@@ -1,4 +1,5 @@
 use std;
+use winit::event_loop::ControlFlow;
 
 pub struct EventLoop {
     ui_needs_update: bool,
@@ -16,8 +17,8 @@ impl EventLoop {
     /// Produce an iterator yielding all available events.
     pub fn next(
         &mut self,
-        events_loop: &mut glium::glutin::EventsLoop,
-    ) -> Vec<glium::glutin::Event> {
+        events_loop: &mut glium::glutin::event_loop::EventLoop<()>,
+    ) -> Vec<glium::glutin::event::Event<()>> {
         // We don't want to loop any faster than 60 FPS, so wait until it has been at least 16ms
         // since the last yield.
         let last_update = self.last_update;
@@ -29,13 +30,13 @@ impl EventLoop {
 
         // Collect all pending events.
         let mut events = Vec::new();
-        events_loop.poll_events(|event| events.push(event));
+        // events_loop.poll_events(|event| events.push(event));
 
         // If there are no events and the `Ui` does not need updating, wait for the next event.
         if events.is_empty() && !self.ui_needs_update {
-            events_loop.run_forever(|event| {
+            events_loop.run(|event, target, cf| {
                 events.push(event);
-                glium::glutin::ControlFlow::Break
+                *cf = ControlFlow::Exit
             });
         }
 

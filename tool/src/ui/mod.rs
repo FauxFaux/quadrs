@@ -9,10 +9,17 @@ use palette;
 use rustfft::algorithm::Radix4;
 use rustfft::num_complex::Complex;
 use rustfft::FftDirection;
+use rusttype::FontCollection;
+use winit::dpi::{LogicalSize, Size};
+use winit::event::{KeyboardInput, WindowEvent};
 
 use octagon::Samples;
 
 mod support;
+
+mod butte {
+    // conrod_winit::v023_convert_event!()
+}
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 struct Params {
@@ -28,10 +35,10 @@ pub fn display(samples: &mut dyn Samples) -> Result<(), Error> {
     const HEIGHT: u32 = 600;
 
     // Build the window.
-    let mut events_loop = glium::glutin::EventsLoop::new();
-    let window = glium::glutin::WindowBuilder::new()
+    let mut events_loop = glium::glutin::event_loop::EventLoop::new();
+    let window = glium::glutin::window::WindowBuilder::new()
         .with_title("quadrs")
-        .with_dimensions((WIDTH, HEIGHT).into());
+        .with_inner_size(Size::Logical(LogicalSize::new(WIDTH as f64, HEIGHT as f64)));
     let context = glium::glutin::ContextBuilder::new()
         .with_vsync(true)
         .with_multisampling(4);
@@ -40,7 +47,7 @@ pub fn display(samples: &mut dyn Samples) -> Result<(), Error> {
     // construct our `Ui`.
     let mut ui = conrod_core::UiBuilder::new([WIDTH as f64, HEIGHT as f64]).build();
     ui.fonts.insert(
-        text::FontCollection::from_bytes(
+        FontCollection::from_bytes(
             &include_bytes!("../../../assets/NotoSans-Regular.ttf")[..],
         )?
         .into_font()?,
@@ -85,41 +92,44 @@ pub fn display(samples: &mut dyn Samples) -> Result<(), Error> {
 
     // A wrapper around the winit window that allows us to implement the trait necessary for enabling
 // the winit <-> conrod conversion functions.
-    struct WindowRef<'a>(&'a winit::Window);
+    struct WindowRef<'a>(&'a winit::window::Window);
 
     // Implement the `WinitWindow` trait for `WindowRef` to allow for generating compatible conversion
 // functions.
     impl<'a> conrod_winit::WinitWindow for WindowRef<'a> {
         fn get_inner_size(&self) -> Option<(u32, u32)> {
-            winit::Window::get_inner_size(&self.0).map(Into::into)
+            let size = winit::window::Window::inner_size(&self.0);
+            Some((size.width, size.height))
         }
         fn hidpi_factor(&self) -> f32 {
-            winit::Window::get_hidpi_factor(&self.0) as _
+            // winit::window::Window::inner_size(&self.0) as _
+            // TODO
+            1.
         }
     }
-    conrod_winit::conversion_fns!();
 
     // Poll events from the window.
     let mut event_loop = support::EventLoop::new();
     'main: loop {
         // Handle all events.
         for event in event_loop.next(&mut events_loop) {
-            // Use the `winit` backend feature to convert the winit event to a conrod one.
+            // comically fucked up feature detection, thank god this
+            // library is dead and I'll never have to upgrade it ever again
             if let Some(event) =
-                convert_event(event.clone(), &WindowRef(display.gl_window().window()))
+                conrod_winit::v023_convert_event!(event.clone(), display.gl_window().window())
             {
                 ui.handle_event(event);
             }
 
             match event {
-                glium::glutin::Event::WindowEvent { event, .. } => match event {
+                winit::event::Event::WindowEvent { event, .. } => match event {
                     // Break from the loop upon `Escape`.
-                    glium::glutin::WindowEvent::Destroyed
-                    | glium::glutin::WindowEvent::CloseRequested
-                    | glium::glutin::WindowEvent::KeyboardInput {
+                    WindowEvent::Destroyed
+                    | WindowEvent::CloseRequested
+                    | WindowEvent::KeyboardInput {
                         input:
-                            glium::glutin::KeyboardInput {
-                                virtual_keycode: Some(glium::glutin::VirtualKeyCode::Escape),
+                        KeyboardInput {
+                                virtual_keycode: Some(winit::event::VirtualKeyCode::Escape),
                                 ..
                             },
                         ..
