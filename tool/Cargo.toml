@@ -8,10 +8,10 @@ edition = "2018"
 [dependencies]
 anyhow = "1"
 image = "0.24"
-palette = "0.4"
+palette = "0.5"
 regex = "1"
 rustfft = "6"
-rusttype = "0.8"
+rusttype = "0.9"
 
 conrod_core = "0.70"
 conrod_glium = "0.70"

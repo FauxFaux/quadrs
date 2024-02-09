@@ -82,13 +82,12 @@ pub fn display(samples: &mut dyn Samples) -> Result<(), Error> {
     let mut image_map = conrod_core::image::Map::<glium::texture::Texture2d>::new();
     let mut canvas_img = None;
 
-
     // A wrapper around the winit window that allows us to implement the trait necessary for enabling
-// the winit <-> conrod conversion functions.
+    // the winit <-> conrod conversion functions.
     struct WindowRef<'a>(&'a winit::Window);
 
     // Implement the `WinitWindow` trait for `WindowRef` to allow for generating compatible conversion
-// functions.
+    // functions.
     impl<'a> conrod_winit::WinitWindow for WindowRef<'a> {
         fn get_inner_size(&self) -> Option<(u32, u32)> {
             winit::Window::get_inner_size(&self.0).map(Into::into)

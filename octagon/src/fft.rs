@@ -1,7 +1,7 @@
 use anyhow::Error;
-use num_complex::Complex;
 use num_traits::identities::Zero;
 use rustfft::algorithm::Radix4;
+use rustfft::num_complex::Complex;
 use rustfft::{Fft, FftDirection};
 
 use crate::samples::Samples;

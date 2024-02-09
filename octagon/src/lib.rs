@@ -11,8 +11,8 @@ use std::fs;
 use anyhow::anyhow;
 use anyhow::Error;
 use byteorder::ByteOrder;
-use num_complex::Complex;
 use num_traits::identities::Zero;
+use rustfft::num_complex::Complex;
 
 pub use crate::samples::Samples;
 
