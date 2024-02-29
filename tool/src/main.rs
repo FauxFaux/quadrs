@@ -58,11 +58,7 @@ fn main() -> Result<(), Error> {
         use crate::args::Command::*;
         match command {
             Octagon(op) => samples = op.exec(samples)?,
-            Ui => ui::display(
-                samples
-                    .as_mut()
-                    .ok_or_else(|| anyhow!("ui requires an input FOR NOW"))?,
-            )?,
+            Ui => ui::display(samples.take().expect("ui requires an input FOR NOW"))?,
         }
     }
 

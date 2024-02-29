@@ -1,3 +1,4 @@
+use std::fs::File;
 use std::io::Read;
 use std::io::Seek;
 use std::io::SeekFrom;
@@ -12,9 +13,9 @@ pub trait Samples {
     fn len(&self) -> u64;
     fn sample_rate(&self) -> u64;
 
-    fn read_at(&mut self, off: u64, buf: &mut [Complex<f32>]) -> usize;
+    fn read_at(&self, off: u64, buf: &mut [Complex<f32>]) -> usize;
 
-    fn read_exact_at(&mut self, off: u64, buf: &mut [Complex<f32>]) -> Result<(), Error> {
+    fn read_exact_at(&self, off: u64, buf: &mut [Complex<f32>]) -> Result<(), Error> {
         let wanted = buf.len();
         let got = self.read_at(off, buf);
         ensure!(
@@ -36,23 +37,20 @@ impl<T: Samples + ?Sized> Samples for Box<T> {
         (**self).sample_rate()
     }
 
-    fn read_at(&mut self, off: u64, buf: &mut [Complex<f32>]) -> usize {
+    fn read_at(&self, off: u64, buf: &mut [Complex<f32>]) -> usize {
         (**self).read_at(off, buf)
     }
 }
 
-pub struct SampleFile<R> {
+pub struct SampleFile {
     format: crate::FileFormat,
     file_len: u64,
-    inner: R,
+    inner: File,
     sample_rate: u64,
 }
 
-impl<R> SampleFile<R>
-where
-    R: Read + Seek,
-{
-    pub fn new(mut inner: R, format: crate::FileFormat, sample_rate: u64) -> Self {
+impl SampleFile {
+    pub fn new(mut inner: File, format: crate::FileFormat, sample_rate: u64) -> Self {
         let file_len = inner.seek(SeekFrom::End(0)).expect("seeking to end");
         SampleFile {
             inner,
@@ -63,10 +61,7 @@ where
     }
 }
 
-impl<R> Samples for SampleFile<R>
-where
-    R: Read + Seek,
-{
+impl Samples for SampleFile {
     fn len(&self) -> u64 {
         self.file_len / self.format.pair_bytes()
     }
@@ -75,17 +70,15 @@ where
         self.sample_rate
     }
 
-    fn read_at(&mut self, off: u64, into: &mut [Complex<f32>]) -> usize {
+    fn read_at(&self, off: u64, into: &mut [Complex<f32>]) -> usize {
+        use std::os::unix::fs::FileExt as _;
         assert!(off < self.len());
-        self.inner
-            .seek(SeekFrom::Start(off * self.format.pair_bytes()))
-            .expect("seek");
 
         let wanted_bytes = (usize_from(self.format.pair_bytes()))
             .checked_mul(into.len())
             .expect("buf too big");
         let mut buf = vec![0u8; wanted_bytes];
-        let mut bytes = self.inner.read(&mut buf).expect("read");
+        let mut bytes = self.inner.read_at(&mut buf, off).expect("read");
         bytes -= bytes % usize_from(self.format.pair_bytes());
         for (i, sample) in buf[0..bytes]
             .chunks(usize_from(self.format.pair_bytes()))

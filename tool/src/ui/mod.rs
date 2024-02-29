@@ -24,7 +24,7 @@ struct Params {
     stretch: isize,
 }
 
-pub fn display(samples: &mut dyn Samples) -> Result<(), Error> {
+pub fn display(samples: Box<dyn Samples>) -> Result<(), Error> {
     const WIDTH: u32 = 800;
     const HEIGHT: u32 = 600;
 
@@ -106,32 +106,30 @@ pub fn display(samples: &mut dyn Samples) -> Result<(), Error> {
     let mut event_loop = support::EventLoop::new();
     events_loop.run(move |event, _, control_flow| {
         // Handle all events.
-        for event in event_loop.next(&mut events_loop) {
-            // Use the `winit` backend feature to convert the winit event to a conrod one.
-            if let Some(event) = convert_event(event.clone(), &WindowRef(display.gl_window().window())) {
-                ui.handle_event(event);
-            }
+        // Use the `winit` backend feature to convert the winit event to a conrod one.
+        if let Some(event) = convert_event(&event, display.gl_window().window()) {
+            ui.handle_event(event);
+        }
 
-            match event {
-                glium::glutin::event::Event::WindowEvent { event, .. } => match event {
-                    // Break from the loop upon `Escape`.
-                    glium::glutin::event::WindowEvent::Destroyed
-                    | glium::glutin::event::WindowEvent::CloseRequested
-                    | glium::glutin::event::WindowEvent::KeyboardInput {
-                        input:
-                            glium::glutin::event::KeyboardInput {
-                                virtual_keycode: Some(glium::glutin::event::VirtualKeyCode::Escape),
-                                ..
-                            },
-                        ..
-                    } => {
-                        *control_flow = glium::glutin::event_loop::ControlFlow::Exit;
-                        return;
-                    }
-                    _ => (),
-                },
+        match event {
+            glium::glutin::event::Event::WindowEvent { event, .. } => match event {
+                // Break from the loop upon `Escape`.
+                glium::glutin::event::WindowEvent::Destroyed
+                | glium::glutin::event::WindowEvent::CloseRequested
+                | glium::glutin::event::WindowEvent::KeyboardInput {
+                    input:
+                        glium::glutin::event::KeyboardInput {
+                            virtual_keycode: Some(glium::glutin::event::VirtualKeyCode::Escape),
+                            ..
+                        },
+                    ..
+                } => {
+                    *control_flow = glium::glutin::event_loop::ControlFlow::Exit;
+                    return;
+                }
                 _ => (),
-            }
+            },
+            _ => (),
         }
 
         const BUTTON_HEIGHT: f64 = 28.;
@@ -255,7 +253,7 @@ pub fn display(samples: &mut dyn Samples) -> Result<(), Error> {
                 params.width = w;
                 params.height = h;
                 if params != prev_params || canvas_img.is_none() {
-                    let datums = match render(samples, &params) {
+                    let datums = match render(&samples, &params) {
                         Ok(datums) => datums,
                         Err(e) => {
                             println!("TODO: render failed: {:?}", e);
@@ -315,7 +313,7 @@ impl MemImage {
     }
 }
 
-fn render(samples: &mut dyn Samples, params: &Params) -> Result<Vec<(u8, u8, u8)>, Error> {
+fn render(samples: &dyn Samples, params: &Params) -> Result<Vec<(u8, u8, u8)>, Error> {
     let w = params.width as usize;
     let h = params.height as usize;
 
@@ -438,7 +436,7 @@ fn render(samples: &mut dyn Samples, params: &Params) -> Result<Vec<(u8, u8, u8)
 #[inline]
 fn fft_at(
     fft: &Radix4<f32>,
-    samples: &mut dyn Samples,
+    samples: &dyn Samples,
     sample_pos: u64,
 ) -> Result<Vec<Complex<f32>>, Error> {
     use rustfft::num_traits::identities::Zero;

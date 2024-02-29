@@ -51,7 +51,7 @@ where
         self.original_sample_rate / self.decimate
     }
 
-    fn read_at(&mut self, off: u64, buf: &mut [Complex<f32>]) -> usize {
+    fn read_at(&self, off: u64, buf: &mut [Complex<f32>]) -> usize {
         // This will only work well if we feed at least `self.filter.len()` extra
         // samples in before we get to the data we want. We also have to discard samples after the
         // end, and deal with decimation. Right.

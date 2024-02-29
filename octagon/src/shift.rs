@@ -43,7 +43,7 @@ where
         self.sample_rate
     }
 
-    fn read_at(&mut self, off: u64, buf: &mut [Complex<f32>]) -> usize {
+    fn read_at(&self, off: u64, buf: &mut [Complex<f32>]) -> usize {
         let valid = self.inner.read_at(off, buf);
         for i in 0..valid {
             let place = (off + (i as u64)) as f64 * self.ratio;

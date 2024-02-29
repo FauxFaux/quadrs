@@ -32,7 +32,7 @@ impl Samples for Gen {
         (self.seconds * (self.sample_rate as f64)) as u64
     }
 
-    fn read_at(&mut self, off: u64, buf: &mut [Complex<f32>]) -> usize {
+    fn read_at(&self, off: u64, buf: &mut [Complex<f32>]) -> usize {
         for i in 0..buf.len() {
             let base = (off + (i as u64)) as f64 * TAU / self.sample_rate as f64;
             let mut val = Complex::zero();
