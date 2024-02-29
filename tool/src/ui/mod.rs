@@ -9,6 +9,7 @@ use palette;
 use rustfft::algorithm::Radix4;
 use rustfft::num_complex::Complex;
 use rustfft::FftDirection;
+use winit::dpi::LogicalSize;
 
 use octagon::Samples;
 
@@ -28,10 +29,13 @@ pub fn display(samples: &mut dyn Samples) -> Result<(), Error> {
     const HEIGHT: u32 = 600;
 
     // Build the window.
-    let mut events_loop = glium::glutin::EventsLoop::new();
-    let window = glium::glutin::WindowBuilder::new()
+    let mut events_loop = glium::glutin::event_loop::EventLoop::new();
+    let window = glium::glutin::window::WindowBuilder::new()
         .with_title("quadrs")
-        .with_dimensions((WIDTH, HEIGHT).into());
+        .with_inner_size::<LogicalSize<f64>>(LogicalSize::from((
+            f64::from(WIDTH),
+            f64::from(HEIGHT),
+        )));
     let context = glium::glutin::ContextBuilder::new()
         .with_vsync(true)
         .with_multisampling(4);
@@ -84,45 +88,46 @@ pub fn display(samples: &mut dyn Samples) -> Result<(), Error> {
 
     // A wrapper around the winit window that allows us to implement the trait necessary for enabling
     // the winit <-> conrod conversion functions.
-    struct WindowRef<'a>(&'a winit::Window);
+    struct WindowRef<'a>(&'a winit::window::Window);
 
     // Implement the `WinitWindow` trait for `WindowRef` to allow for generating compatible conversion
     // functions.
     impl<'a> conrod_winit::WinitWindow for WindowRef<'a> {
         fn get_inner_size(&self) -> Option<(u32, u32)> {
-            winit::Window::get_inner_size(&self.0).map(Into::into)
+            Some(winit::window::Window::inner_size(&self.0).into())
         }
         fn hidpi_factor(&self) -> f32 {
-            winit::Window::get_hidpi_factor(&self.0) as _
+            unimplemented!("winit::window::Window::hidpi_factor(&self.0) as _")
         }
     }
-    conrod_winit::conversion_fns!();
+    conrod_winit::v023_conversion_fns!();
 
     // Poll events from the window.
     let mut event_loop = support::EventLoop::new();
-    'main: loop {
+    events_loop.run(move |event, _, control_flow| {
         // Handle all events.
         for event in event_loop.next(&mut events_loop) {
             // Use the `winit` backend feature to convert the winit event to a conrod one.
-            if let Some(event) =
-                convert_event(event.clone(), &WindowRef(display.gl_window().window()))
-            {
+            if let Some(event) = convert_event(event.clone(), &WindowRef(display.gl_window().window())) {
                 ui.handle_event(event);
             }
 
             match event {
-                glium::glutin::Event::WindowEvent { event, .. } => match event {
+                glium::glutin::event::Event::WindowEvent { event, .. } => match event {
                     // Break from the loop upon `Escape`.
-                    glium::glutin::WindowEvent::Destroyed
-                    | glium::glutin::WindowEvent::CloseRequested
-                    | glium::glutin::WindowEvent::KeyboardInput {
+                    glium::glutin::event::WindowEvent::Destroyed
+                    | glium::glutin::event::WindowEvent::CloseRequested
+                    | glium::glutin::event::WindowEvent::KeyboardInput {
                         input:
-                            glium::glutin::KeyboardInput {
-                                virtual_keycode: Some(glium::glutin::VirtualKeyCode::Escape),
+                            glium::glutin::event::KeyboardInput {
+                                virtual_keycode: Some(glium::glutin::event::VirtualKeyCode::Escape),
                                 ..
                             },
                         ..
-                    } => break 'main,
+                    } => {
+                        *control_flow = glium::glutin::event_loop::ControlFlow::Exit;
+                        return;
+                    }
                     _ => (),
                 },
                 _ => (),
@@ -289,7 +294,7 @@ pub fn display(samples: &mut dyn Samples) -> Result<(), Error> {
             renderer.draw(&display, &mut target, &image_map).unwrap();
             target.finish().unwrap();
         }
-    }
+    });
 
     Ok(())
 }
