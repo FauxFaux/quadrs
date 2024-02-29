@@ -40,12 +40,9 @@ pub fn display(samples: Box<dyn Samples>) -> Result<(), Error> {
 
     // construct our `Ui`.
     let mut ui = conrod_core::UiBuilder::new([WIDTH as f64, HEIGHT as f64]).build();
-    ui.fonts.insert(
-        text::FontCollection::from_bytes(
-            &include_bytes!("../../../assets/NotoSans-Regular.ttf")[..],
-        )?
-        .into_font()?,
-    );
+    ui.fonts.insert(text::Font::from_bytes(
+        &include_bytes!("../../../assets/NotoSans-Regular.ttf")[..],
+    )?);
 
     // A type used for converting `conrod_core::render::Primitives` into `Command`s that can be used
     // for drawing to the glium `Surface`.

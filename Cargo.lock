@@ -215,9 +215,9 @@ checksum = "3d7b894f5411737b7867f4827955924d7c254fc9f4d91a6aad6b097804b1018b"
 
 [[package]]
 name = "conrod_core"
-version = "0.71.0"
+version = "0.72.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c07b39486d6ab17012506a6ed359efdfbfcc7b616e4ff52eaf75bc6fd3c03f9"
+checksum = "da20b3485590532ffa079cca7a9184f2e4b09a7456935610ea3f665fb9a2cbab"
 dependencies = [
  "conrod_derive",
  "copypasta",
@@ -231,9 +231,9 @@ dependencies = [
 
 [[package]]
 name = "conrod_derive"
-version = "0.71.0"
+version = "0.72.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f7b034b19c35f46461439c130fcebada7e67c7379a2f91a259a83f9e9643085e"
+checksum = "eae1e0150e60f12e16b5106642790599e39d6e97cdfe1734a3bdbffbc1e5f6e2"
 dependencies = [
  "proc-macro2 1.0.78",
  "quote 1.0.35",
@@ -242,9 +242,9 @@ dependencies = [
 
 [[package]]
 name = "conrod_glium"
-version = "0.71.0"
+version = "0.72.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ea62a2faf29da55238e515cf0b32d8a554488a606a84a0f176a7d577c76499e5"
+checksum = "b6b92732bb55a15a7d42655826d762faa45e64fe4c44adc8fa3c78709d1b884a"
 dependencies = [
  "conrod_core",
  "glium",
@@ -252,9 +252,9 @@ dependencies = [
 
 [[package]]
 name = "conrod_winit"
-version = "0.71.0"
+version = "0.72.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dfbe64a64440965cbb4897bd4c35631d34304426e683a4dd86fd00074cecb514"
+checksum = "d1454c16d44a020db7592351d52d255242d21897587a813d89b91c52e603f2f9"
 
 [[package]]
 name = "copypasta"
@@ -1100,12 +1100,12 @@ dependencies = [
 
 [[package]]
 name = "num"
-version = "0.2.1"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b8536030f9fea7127f841b45bb6243b27255787fb4eb83958aa1ef9d2fdc0c36"
+checksum = "8b7a8e9be5e039e2ff869df49155f1c06bd01ade2117ec783e56ab0932b67a8f"
 dependencies = [
  "num-bigint",
- "num-complex 0.2.4",
+ "num-complex 0.3.1",
  "num-integer",
  "num-iter",
  "num-rational",
@@ -1114,9 +1114,9 @@ dependencies = [
 
 [[package]]
 name = "num-bigint"
-version = "0.2.6"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "090c7f9998ee0ff65aa5b723e4009f7b217707f1fb5ea551329cc4d6231fb304"
+checksum = "5f6f7833f2cbf2360a6cfd58cd41a53aa7a90bd4c202f5b1c7dd2ed73c57b2c3"
 dependencies = [
  "autocfg",
  "num-integer",
@@ -1125,11 +1125,10 @@ dependencies = [
 
 [[package]]
 name = "num-complex"
-version = "0.2.4"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6b19411a9719e753aff12e5187b74d60d3dc449ec3f4dc21e3989c3f554bc95"
+checksum = "747d632c0c558b87dbabbe6a82f3b4ae03720d0646ac5b7b4dae89394be5f2c5"
 dependencies = [
- "autocfg",
  "num-traits",
 ]
 
@@ -1164,9 +1163,9 @@ dependencies = [
 
 [[package]]
 name = "num-rational"
-version = "0.2.4"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c000134b5dbf44adc5cb772486d335293351644b801551abe8f75c84cfa4aef"
+checksum = "12ac428b1cb17fce6f731001d307d351ec70a6d202fc2e60f7d4c5e42d8f4f07"
 dependencies = [
  "autocfg",
  "num-bigint",
