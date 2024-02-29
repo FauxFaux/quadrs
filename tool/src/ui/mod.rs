@@ -1,19 +1,16 @@
 use anyhow::ensure;
 use anyhow::Error;
 use conrod_core::{
-    self, color, text, widget, Borderable, Colorable, Labelable, Positionable, Sizeable, Widget,
+    color, text, widget, Borderable, Colorable, Labelable, Positionable, Sizeable, Widget,
 };
 use glium::texture::{ClientFormat, RawImage2d};
 use glium::Surface;
-use palette;
 use rustfft::algorithm::Radix4;
 use rustfft::num_complex::Complex;
 use rustfft::FftDirection;
 use winit::dpi::LogicalSize;
 
 use octagon::Samples;
-
-mod support;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 struct Params {
@@ -103,8 +100,8 @@ pub fn display(samples: Box<dyn Samples>) -> Result<(), Error> {
     conrod_winit::v023_conversion_fns!();
 
     // Poll events from the window.
-    let mut event_loop = support::EventLoop::new();
     events_loop.run(move |event, _, control_flow| {
+        let needs_update = || {};
         // Handle all events.
         // Use the `winit` backend feature to convert the winit event to a conrod one.
         if let Some(event) = convert_event(&event, display.gl_window().window()) {
@@ -163,7 +160,7 @@ pub fn display(samples: Box<dyn Samples>) -> Result<(), Error> {
                 .set(ids.fft_up, ui)
             {
                 params.fft_width *= 2;
-                event_loop.needs_update();
+                needs_update();
             }
 
             for _ in widget::Button::new()
@@ -175,7 +172,7 @@ pub fn display(samples: Box<dyn Samples>) -> Result<(), Error> {
             {
                 if params.fft_width > 2 {
                     params.fft_width /= 2;
-                    event_loop.needs_update();
+                    needs_update();
                 }
             }
 
@@ -193,7 +190,7 @@ pub fn display(samples: Box<dyn Samples>) -> Result<(), Error> {
                 .set(ids.stretch_up, ui)
             {
                 params.stretch += 1;
-                event_loop.needs_update();
+                needs_update();
             }
 
             for _ in widget::Button::new()
@@ -204,7 +201,7 @@ pub fn display(samples: Box<dyn Samples>) -> Result<(), Error> {
                 .set(ids.stretch_down, ui)
             {
                 params.stretch -= 1;
-                event_loop.needs_update();
+                needs_update();
             }
 
             widget::Text::new(&format!("stretch: {}", params.stretch))
@@ -221,7 +218,7 @@ pub fn display(samples: Box<dyn Samples>) -> Result<(), Error> {
                 .set(ids.stride_up, ui)
             {
                 params.stride += 1;
-                event_loop.needs_update();
+                needs_update();
             }
 
             for _ in widget::Button::new()
@@ -233,7 +230,7 @@ pub fn display(samples: Box<dyn Samples>) -> Result<(), Error> {
             {
                 if params.stride > 1 {
                     params.stride -= 1;
-                    event_loop.needs_update();
+                    needs_update();
                 }
             }
 
@@ -292,9 +289,7 @@ pub fn display(samples: Box<dyn Samples>) -> Result<(), Error> {
             renderer.draw(&display, &mut target, &image_map).unwrap();
             target.finish().unwrap();
         }
-    });
-
-    Ok(())
+    })
 }
 
 struct MemImage {

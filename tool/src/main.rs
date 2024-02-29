@@ -1,13 +1,10 @@
 #[macro_use]
 extern crate conrod_core;
-#[macro_use]
 extern crate conrod_glium;
-#[macro_use]
 extern crate conrod_winit;
 
 use std::env;
 
-use anyhow::anyhow;
 use anyhow::bail;
 use anyhow::Error;
 
