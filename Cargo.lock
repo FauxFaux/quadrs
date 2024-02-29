@@ -215,9 +215,9 @@ checksum = "3d7b894f5411737b7867f4827955924d7c254fc9f4d91a6aad6b097804b1018b"
 
 [[package]]
 name = "conrod_core"
-version = "0.73.0"
+version = "0.74.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c1a496f6e5d0beceab817e680e469c7097272ee96eff9bee939dd68db6c1a899"
+checksum = "cf2cc8a3e312e2f4f73b936b8de729bda6a61310d0e1e59bd5e91feb88f73b0d"
 dependencies = [
  "conrod_derive",
  "copypasta",
@@ -231,9 +231,9 @@ dependencies = [
 
 [[package]]
 name = "conrod_derive"
-version = "0.73.0"
+version = "0.74.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2e4b6ee97fd71a0da09a7d9811a9e49cd773013b52894ae0a7f08440abd8cb7"
+checksum = "e19707efa7d816532a5738edce5bfa61912d3d78deb7427ccf3a3f491a5716d0"
 dependencies = [
  "proc-macro2 1.0.78",
  "quote 1.0.35",
@@ -242,9 +242,9 @@ dependencies = [
 
 [[package]]
 name = "conrod_glium"
-version = "0.73.0"
+version = "0.74.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f41ac8dde69021971ef81f9307934a65aaeacf0040833b4fc85a48374aa69b9"
+checksum = "1a10098eadd904061c7347287cbb2090543d7f225503ce83102ccc25ef0d3c60"
 dependencies = [
  "conrod_core",
  "glium",
@@ -252,9 +252,9 @@ dependencies = [
 
 [[package]]
 name = "conrod_winit"
-version = "0.73.0"
+version = "0.74.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "91a668ae134a999a5f48a8dc03c2a0abb6ef24c98eb5b53d1aefd686feac8b6e"
+checksum = "f2ef59479f5d5f8de09fa1c14a388bacf430e9713fc83a8a86d95facbc85edb5"
 
 [[package]]
 name = "copypasta"
