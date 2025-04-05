@@ -26,7 +26,7 @@ pub fn display(samples: Box<dyn Samples>) -> Result<(), Error> {
     const HEIGHT: u32 = 600;
 
     // Build the window.
-    let mut events_loop = glium::glutin::event_loop::EventLoop::new();
+    let events_loop = glium::glutin::event_loop::EventLoop::new();
     let window = glium::glutin::window::WindowBuilder::new()
         .with_title("quadrs")
         .with_inner_size::<LogicalSize<f64>>(LogicalSize::from((
@@ -80,20 +80,6 @@ pub fn display(samples: Box<dyn Samples>) -> Result<(), Error> {
     let mut image_map = conrod_core::image::Map::<glium::texture::Texture2d>::new();
     let mut canvas_img = None;
 
-    // A wrapper around the winit window that allows us to implement the trait necessary for enabling
-    // the winit <-> conrod conversion functions.
-    struct WindowRef<'a>(&'a winit::window::Window);
-
-    // Implement the `WinitWindow` trait for `WindowRef` to allow for generating compatible conversion
-    // functions.
-    impl<'a> conrod_winit::WinitWindow for WindowRef<'a> {
-        fn get_inner_size(&self) -> Option<(u32, u32)> {
-            Some(winit::window::Window::inner_size(&self.0).into())
-        }
-        fn hidpi_factor(&self) -> f32 {
-            unimplemented!("winit::window::Window::hidpi_factor(&self.0) as _")
-        }
-    }
     conrod_winit::v023_conversion_fns!();
 
     // Poll events from the window.
@@ -231,13 +217,12 @@ pub fn display(samples: Box<dyn Samples>) -> Result<(), Error> {
                 }
             }
 
-            for val in widget::NumberDialer::new(f64::from(params.stride), 1., 4096., 0)
+            if let Some(val) = widget::NumberDialer::new(f64::from(params.stride), 1., 4096., 0)
                 .mid_left_of(ids.buttons)
                 .right_from(ids.stride_down, BUTTON_PAD)
                 .w(64.)
                 .set(ids.stride_label, ui)
             {
-                let val: f64 = val;
                 params.stride = val.round() as u32;
             }
 
@@ -407,7 +392,7 @@ fn render(samples: &dyn Samples, params: &Params) -> Result<Vec<(u8, u8, u8)>, E
         scan_pos += 1;
         if scan_pos >= scan {
             scan_pos = 0;
-            #[cfg(never)]
+            #[cfg(feature = "never")]
             println!(
                 "{}: {:.0} {:?}",
                 if means.0 < means.1 { 0 } else { 1 },

@@ -35,7 +35,7 @@ pub fn spark_fft(
         let bot = ' ';
         let graph: Vec<char> = "▁▂▃▄▅▆▇".chars().collect();
 
-        #[cfg(never)]
+        #[cfg(feature = "never")]
         let max = out
             .iter()
             .map(|x| x.norm())

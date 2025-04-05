@@ -21,3 +21,6 @@ winit = "0.23"
 
 [dependencies.octagon]
 path = "../octagon"
+
+[features]
+never = []

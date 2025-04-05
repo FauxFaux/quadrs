@@ -34,7 +34,7 @@ pub fn scan(data: &[bool], scale: f64) -> (f64, Vec<bool>) {
 
         let bits = (found as f64) / scale;
 
-        #[cfg(never)]
+        #[cfg(feature = "never")]
         println!(
             "{:0.2} {} {}",
             bits,

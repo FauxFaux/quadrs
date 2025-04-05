@@ -11,3 +11,6 @@ byteorder = "1"
 num-traits = "0.2"
 regex = "1"
 rustfft = "6"
+
+[features]
+never = []
