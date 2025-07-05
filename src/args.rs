@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::iter::Peekable;
 
-use crate::FileFormat::{ComplexFloat32, ComplexInt16, ComplexInt8, ComplexUint8};
 use crate::{FileFormat, Operation};
 use anyhow::anyhow;
 use anyhow::bail;

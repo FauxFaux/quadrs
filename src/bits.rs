@@ -1,23 +1,5 @@
 use crate::usize_from;
 
-fn decode(data: &[bool]) -> String {
-    let mut data = data.into_iter().cloned();
-    let mut s = String::with_capacity(data.len() / 8);
-    'a: loop {
-        let mut val = 0u8;
-        for bit in (0..8).rev() {
-            match data.next() {
-                Some(true) => val |= 1 << bit,
-                Some(false) => (),
-                None => break 'a,
-            }
-        }
-        s.push(val as char);
-    }
-
-    s
-}
-
 pub fn scan(data: &[bool], scale: f64) -> (f64, Vec<bool>) {
     let mut i = 0;
     let half = usize_from((scale / 2.).round() as u64);
@@ -86,37 +68,6 @@ mod tests {
         );
     }
 
-    #[test]
-    fn de_run() {
-        use super::decode;
-        use super::scan;
-
-        // 1100000110010100110000011111110100101100011101010001000001000001
-        let inp = parse(
-            r#"11
-                 010000000111110000011111000001111100001111100000111110000011111000001111100001
-                 111100000111110000011111000001111100000111100000111110000011111000001111100000
-                 111110000111110000011111000001111100000111110000111110000011111000001111100000
-                 111110000111110000011111000001111100000111110000011110000011111000001111100000
-                 11111000001111111110000000000000000000000001111111111000000000111110000011111
-                 000000000011111111110000000000000000000000001111111111111111111111111111111111
-                 000001111100000000001111100001111111111000000000000000111111111111111000011111
-                 000001111100000000000000011111000000000000000000000000111110000000000000000000
-                 00000111111110101"#,
-        );
-
-        let (_err, val) = scan(&inp, 4.8);
-        println!("{}", super::fmt(&val));
-        for off in 0..8 {
-            println!("{:?}", decode(&val[off..]));
-        }
-
-        let inv: Vec<bool> = val.iter().map(|&x| !x).collect();
-        for off in 0..8 {
-            println!("{:?}", decode(&inv[off..]));
-        }
-    }
-
     fn parse(s: &str) -> Vec<bool> {
         s.chars()
             .flat_map(|x| match x {
@@ -127,8 +78,4 @@ mod tests {
             })
             .collect()
     }
-}
-
-fn fmt(bits: &[bool]) -> String {
-    bits.iter().map(|&x| if x { 'X' } else { '.' }).collect()
 }

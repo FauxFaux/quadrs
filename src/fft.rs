@@ -69,9 +69,7 @@ pub fn spark_fft(
 
 #[derive(Debug, Clone)]
 pub struct Levels {
-    pub sample_rate: u64,
     pub vals: Vec<usize>,
-    pub levels: usize,
 }
 
 /// `len/decimate` total to return. Need to read every `decimate`, and for `fft_width`?
@@ -100,7 +98,5 @@ pub fn freq_levels(
 
     Levels {
         vals,
-        levels: 2,
-        sample_rate: samples.sample_rate() / stride,
     }
 }

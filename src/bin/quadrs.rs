@@ -1,8 +1,3 @@
-#[macro_use]
-extern crate conrod_core;
-extern crate conrod_glium;
-extern crate conrod_winit;
-
 use std::env;
 
 use anyhow::bail;
