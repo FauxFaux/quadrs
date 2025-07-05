@@ -44,6 +44,7 @@ pub fn spark_fft(
 
         let distinction = (max - min) / (graph.len() as f32);
         let mut buf = String::with_capacity(fft_width);
+
         for val in inp
             .iter()
             .skip(fft_width / 2)
@@ -96,7 +97,5 @@ pub fn freq_levels(
         vals.push(if first < second { 0 } else { 1 });
     }
 
-    Levels {
-        vals,
-    }
+    Levels { vals }
 }

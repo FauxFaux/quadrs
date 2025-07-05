@@ -12,6 +12,7 @@ path = "src/bin/quadrs.rs"
 anyhow = "1"
 byteorder = "1"
 num-traits = "0.2"
+poll-promise = "0.3"
 regex = "1"
 rustfft = "6"
 image = "0.24"
@@ -23,6 +24,15 @@ conrod_glium = "0.76"
 conrod_winit = "0.76"
 glium = "0.28"
 winit = "0.23"
+
+egui = "0.31"
+eframe = { version = "0.31", default-features = false, features = [
+    "default_fonts", # Embed the default egui fonts.
+    "glow",          # Use the glow rendering backend. Alternative: "wgpu".
+    "persistence",   # Enable restoring app state when restarting the app.
+    "wayland",       # To support Linux (and CI)
+    "x11",           # To support older Linux distributions (restores one of the default features)
+] }
 
 [features]
 never = []

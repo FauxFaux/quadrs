@@ -8,7 +8,7 @@ use rustfft::num_complex::Complex;
 
 use crate::usize_from;
 
-pub trait Samples {
+pub trait Samples: Sync + Send {
     fn len(&self) -> u64;
     fn sample_rate(&self) -> u64;
 
@@ -19,7 +19,7 @@ pub trait Samples {
         let got = self.read_at(off, buf);
         ensure!(
             wanted == got,
-            "TODO: read-exact messed up: {} (wanted) != {} (read)",
+            "TODO: read-exact messed up: {} (wanted) != {} (read) at {off}",
             wanted,
             got
         );
@@ -77,7 +77,10 @@ impl Samples for SampleFile {
             .checked_mul(into.len())
             .expect("buf too big");
         let mut buf = vec![0u8; wanted_bytes];
-        let mut bytes = self.inner.read_at(&mut buf, off).expect("read");
+        let mut bytes = self
+            .inner
+            .read_at(&mut buf, off * self.format.pair_bytes())
+            .expect("read");
         bytes -= bytes % usize_from(self.format.pair_bytes());
         for (i, sample) in buf[0..bytes]
             .chunks(usize_from(self.format.pair_bytes()))

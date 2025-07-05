@@ -1,5 +1,6 @@
 pub mod args;
 pub mod bits;
+pub mod eui;
 mod fft;
 mod filter;
 mod gen;
@@ -23,8 +24,7 @@ const TAU: f64 = PI * 2.;
 #[derive(Debug, Clone)]
 pub enum Operation {
     From {
-        sample_rate: u64,
-        format: crate::FileFormat,
+        details: FileDetails,
         filename: String,
     },
     Shift {
@@ -72,6 +72,12 @@ pub enum FileFormat {
     ComplexInt16,
 }
 
+#[derive(Debug, Clone)]
+pub struct FileDetails {
+    pub format: FileFormat,
+    pub sample_rate: u64,
+}
+
 impl Operation {
     pub fn exec(
         &self,
@@ -81,12 +87,11 @@ impl Operation {
         Ok(match *self {
             From {
                 ref filename,
-                format,
-                sample_rate,
+                ref details,
             } => Some(Box::new(samples::SampleFile::new(
                 fs::File::open(filename)?,
-                format,
-                sample_rate,
+                details.format,
+                details.sample_rate,
             ))),
             Gen {
                 sample_rate,
@@ -248,13 +253,13 @@ impl FileFormat {
 // clippy
 #[allow(unknown_lints, absurd_extreme_comparisons)]
 fn usize_from(val: u64) -> usize {
-    assert!(val <= std::usize::MAX as u64);
+    assert!(val <= usize::MAX as u64);
     val as usize
 }
 
 // clippy
 #[allow(unknown_lints, absurd_extreme_comparisons)]
 fn u64_from(val: usize) -> u64 {
-    assert!((val as u64) <= std::u64::MAX);
+    assert!((val as u64) <= u64::MAX);
     val as u64
 }

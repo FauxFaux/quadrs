@@ -51,6 +51,7 @@ fn main() -> Result<(), Error> {
         match command {
             Octagon(op) => samples = op.exec(samples)?,
             Ui => ui::display(samples.take().expect("ui requires an input FOR NOW"))?,
+            Eui { filename } => quadrs::eui::display(&filename)?,
         }
     }
 
