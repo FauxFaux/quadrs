@@ -8,8 +8,8 @@ use std::env;
 use anyhow::bail;
 use anyhow::Error;
 
-mod args;
-mod ui;
+use quadrs::args;
+use quadrs::ui;
 
 fn usage(us: &str) {
     println!("usage: {} \\", us);
@@ -52,7 +52,7 @@ fn main() -> Result<(), Error> {
 
     let mut samples = None;
     for command in commands {
-        use crate::args::Command::*;
+        use quadrs::args::Command::*;
         match command {
             Octagon(op) => samples = op.exec(samples)?,
             Ui => ui::display(samples.take().expect("ui requires an input FOR NOW"))?,

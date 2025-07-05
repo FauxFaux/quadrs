@@ -1,9 +1,11 @@
+pub mod args;
 pub mod bits;
 mod fft;
 mod filter;
 mod gen;
 mod samples;
 mod shift;
+pub mod ui;
 
 use std::f64::consts::PI;
 use std::fs;

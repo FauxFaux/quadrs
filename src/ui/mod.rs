@@ -1,7 +1,8 @@
 use anyhow::ensure;
 use anyhow::Error;
 use conrod_core::{
-    color, text, widget, Borderable, Colorable, Labelable, Positionable, Sizeable, Widget,
+    color, text, widget, widget_ids, Borderable, Colorable, Labelable, Positionable, Sizeable,
+    Widget,
 };
 use glium::texture::{ClientFormat, RawImage2d};
 use glium::Surface;
@@ -10,7 +11,7 @@ use rustfft::num_complex::Complex;
 use rustfft::FftDirection;
 use winit::dpi::LogicalSize;
 
-use octagon::Samples;
+use crate::Samples;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 struct Params {
@@ -41,7 +42,7 @@ pub fn display(samples: Box<dyn Samples>) -> Result<(), Error> {
     // construct our `Ui`.
     let mut ui = conrod_core::UiBuilder::new([WIDTH as f64, HEIGHT as f64]).build();
     ui.fonts.insert(text::Font::from_bytes(
-        &include_bytes!("../../../assets/NotoSans-Regular.ttf")[..],
+        &include_bytes!("../../assets/NotoSans-Regular.ttf")[..],
     )?);
 
     // A type used for converting `conrod_core::render::Primitives` into `Command`s that can be used
