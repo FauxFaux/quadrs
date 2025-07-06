@@ -1,12 +1,10 @@
 use crate::args::guess_details;
 use crate::ffts::{take_fft, FftConfig, Windowing};
 use crate::samples::SampleFile;
-use crate::{u64_from, usize_from, Samples};
+use crate::Samples;
 use anyhow::{anyhow, Result};
-use egui::{ColorImage, Vec2};
-use num_traits::Zero;
+use egui::{ColorImage, Context, Vec2};
 use poll_promise::Promise;
-use rustfft::num_complex::Complex;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -49,6 +47,7 @@ struct ManageApp {
     end: f32,
 
     fft_width: f32,
+    windowing: Windowing,
 
     samples: Arc<dyn Samples>,
 
@@ -58,27 +57,27 @@ struct ManageApp {
 }
 
 impl ManageApp {
-    pub fn new(_cc: &eframe::CreationContext<'_>, samples: Arc<dyn Samples>) -> Self {
+    pub fn new(cc: &eframe::CreationContext<'_>, samples: Arc<dyn Samples>) -> Self {
         let mut us = ManageApp {
             samples,
             start: 46.0,
             end: 46.3,
             fft_width: 512.,
+            windowing: Windowing::BlackmanHarris,
             texture: None,
             next_image: None,
             renderation: None,
         };
 
-        us.trigger_redraw();
+        us.trigger_redraw(cc.egui_ctx.clone());
 
         us
     }
 
-    fn trigger_redraw(&mut self) {
+    fn trigger_redraw(&mut self, ctx: Context) {
         let samples = Arc::clone(&self.samples);
         let fft_width = self.fft_width as usize;
-
-        let fft = rustfft::FftPlanner::<f32>::new().plan_fft_forward(fft_width);
+        let windowing = self.windowing;
 
         let start = self.start;
         let end = self.end;
@@ -94,17 +93,36 @@ impl ManageApp {
                 Some((start_sample, end_sample)),
                 &FftConfig {
                     width: fft_width,
-                    windowing: Windowing::BlackmanHarris,
+                    windowing,
                 },
                 hoight,
             )
             .expect("Failed to take FFT");
+            // let min = fft.min();
+            // let range = fft.max() - min;
+            let bucket_count = 128;
+            let buckets = fft.buckets(bucket_count);
+            let max = fft.max();
+            println!("{:?} {max}", buckets);
+            assert_eq!(buckets.len(), bucket_count);
             for row in 0..fft.output_len() {
                 for (i, c) in fft.get(row).iter().enumerate() {
-                    let b = (c / 10. * 256.) as u8;
+                    // let b = ((c - min) / range * 256.0).round() as u8;
+                    let bucket = buckets
+                        .iter()
+                        .position(|start| *c >= *start)
+                        .unwrap_or(bucket_count);
+                    let start = buckets[bucket];
+                    let end = *buckets.get(bucket + 1).unwrap_or(&max);
+                    let local = (*c - start) / (end - start);
+                    let total = (bucket as f32 + local) / bucket_count as f32;
+                    let b = (total * 256.0).round() as u8;
                     buf[row * fft_width + i] = egui::Color32::from_rgb(0, 0, b);
                 }
             }
+
+            // technically a race condition, right?
+            ctx.request_repaint();
 
             ColorImage {
                 size: [fft_width, hoight],
@@ -151,14 +169,27 @@ impl eframe::App for ManageApp {
 
             ui.spacing_mut().slider_width = ui.available_width() - 100.;
 
-            let sliders = vec![
+            let mut fft_settings = vec![
                 ui.add(egui::Slider::new(&mut self.start, 0.0..=100.0).text("start")),
                 ui.add(egui::Slider::new(&mut self.end, 0.0..=100.0).text("end")),
                 ui.add(egui::Slider::new(&mut self.fft_width, 4.0..=4096.0).text("fft")),
             ];
 
-            if sliders.iter().any(|slider| slider.changed()) {
-                self.trigger_redraw();
+            ui.horizontal(|ui| {
+                fft_settings.push(ui.selectable_value(
+                    &mut self.windowing,
+                    Windowing::Rectangular,
+                    "Rectangular",
+                ));
+                fft_settings.push(ui.selectable_value(
+                    &mut self.windowing,
+                    Windowing::BlackmanHarris,
+                    "Blackman-Harris",
+                ));
+            });
+
+            if fft_settings.iter().any(|resp| resp.changed()) {
+                self.trigger_redraw(ui.ctx().clone());
             }
 
             ui.separator();

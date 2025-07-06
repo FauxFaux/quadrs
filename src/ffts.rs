@@ -105,6 +105,19 @@ impl FftResult {
     pub fn min(&self) -> f32 {
         self.inner.iter().cloned().fold(f32::INFINITY, f32::min)
     }
+
+    pub fn buckets(&self, n: usize) -> Vec<f32> {
+        let mut sorted = self.inner.to_vec();
+        sorted.sort_unstable_by(f32::total_cmp);
+        let mut result = Vec::with_capacity(n);
+        let bucket_size = sorted.len() / n;
+        for i in 0..n {
+            let start = i * bucket_size;
+            result.push(sorted[start]);
+        }
+
+        result
+    }
 }
 
 fn generate_blackman_harris_window(n: usize) -> Vec<f32> {
