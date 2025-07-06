@@ -1,4 +1,5 @@
 use crate::args::guess_details;
+use crate::ffts::{take_fft, FftConfig, Windowing};
 use crate::samples::SampleFile;
 use crate::{u64_from, usize_from, Samples};
 use anyhow::{anyhow, Result};
@@ -85,27 +86,22 @@ impl ManageApp {
         self.renderation = Some(Promise::spawn_thread("renderation", move || {
             let hoight = 2048;
             let mut buf = vec![egui::Color32::TRANSPARENT; fft_width * hoight];
-            let mut scratch = vec![Complex::zero(); fft.get_inplace_scratch_len()];
 
-            let mut complex_buf = vec![Complex::zero(); fft_width];
-            let range = ((end - start) / 100.).max(0.000001);
             let start_sample = (samples.len() as f32 * start / 100.) as u64;
-            let visible_samples = (samples.len() as f32 * range) as u64;
-            let step = usize_from(visible_samples / u64_from(hoight));
-
-            for row in 0..hoight {
-                samples
-                    .read_exact_at(start_sample + u64_from(row * step), &mut complex_buf)
-                    .expect("read failed");
-                fft.process_with_scratch(&mut complex_buf, &mut scratch);
-
-                for (i, c) in complex_buf
-                    .iter()
-                    .skip(fft_width / 2)
-                    .chain(complex_buf.iter().take(fft_width / 2))
-                    .enumerate()
-                {
-                    let b = (c.norm() / 10. * 256.) as u8;
+            let end_sample = (samples.len() as f32 * end / 100.) as u64;
+            let fft = take_fft(
+                &*samples,
+                Some((start_sample, end_sample)),
+                &FftConfig {
+                    width: fft_width,
+                    windowing: Windowing::BlackmanHarris,
+                },
+                hoight,
+            )
+            .expect("Failed to take FFT");
+            for row in 0..fft.output_len() {
+                for (i, c) in fft.get(row).iter().enumerate() {
+                    let b = (c / 10. * 256.) as u8;
                     buf[row * fft_width + i] = egui::Color32::from_rgb(0, 0, b);
                 }
             }

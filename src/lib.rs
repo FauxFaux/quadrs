@@ -2,6 +2,7 @@ pub mod args;
 pub mod bits;
 pub mod eui;
 mod fft;
+mod ffts;
 mod filter;
 mod gen;
 mod samples;
@@ -212,7 +213,8 @@ fn do_write(samples: &mut dyn Samples, overwrite: bool, prefix: &str) -> Result<
 }
 
 impl FileFormat {
-    fn type_bytes(&self) -> u64 {
+    #[inline]
+    const fn type_bytes(&self) -> u64 {
         use crate::FileFormat::*;
         match *self {
             ComplexFloat32 => 4,
@@ -221,18 +223,21 @@ impl FileFormat {
         }
     }
 
-    fn pair_bytes(&self) -> u64 {
+    #[inline]
+    const fn pair_bytes(&self) -> u64 {
         self.type_bytes() * 2
     }
 
     fn to_cf32(&self, buf: &[u8]) -> Complex<f32> {
         assert_eq!(self.pair_bytes(), buf.len() as u64);
+        let type_bytes = self.type_bytes() as usize;
         Complex::new(
-            self.to_f32(&buf[0..self.type_bytes() as usize]),
-            self.to_f32(&buf[self.type_bytes() as usize..2 * self.type_bytes() as usize]),
+            self.to_f32(&buf[0..type_bytes]),
+            self.to_f32(&buf[type_bytes..2 * type_bytes]),
         )
     }
 
+    #[inline]
     fn to_f32(&self, buf: &[u8]) -> f32 {
         use crate::FileFormat::*;
         use byteorder::LittleEndian;
