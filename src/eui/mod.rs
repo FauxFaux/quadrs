@@ -100,23 +100,9 @@ impl ManageApp {
             .expect("Failed to take FFT");
             // let min = fft.min();
             // let range = fft.max() - min;
-            let bucket_count = 128;
-            let buckets = fft.buckets(bucket_count);
-            let max = fft.max();
-            println!("{:?} {max}", buckets);
-            assert_eq!(buckets.len(), bucket_count);
             for row in 0..fft.output_len() {
                 for (i, c) in fft.get(row).iter().enumerate() {
-                    // let b = ((c - min) / range * 256.0).round() as u8;
-                    let bucket = buckets
-                        .iter()
-                        .position(|start| *c >= *start)
-                        .unwrap_or(bucket_count);
-                    let start = buckets[bucket];
-                    let end = *buckets.get(bucket + 1).unwrap_or(&max);
-                    let local = (*c - start) / (end - start);
-                    let total = (bucket as f32 + local) / bucket_count as f32;
-                    let b = (total * 256.0).round() as u8;
+                    let b = (c / 4. * 256.0).round() as u8;
                     buf[row * fft_width + i] = egui::Color32::from_rgb(0, 0, b);
                 }
             }
