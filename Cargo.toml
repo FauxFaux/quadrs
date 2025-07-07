@@ -15,9 +15,6 @@ num-traits = "0.2"
 poll-promise = "0.3"
 regex = "1"
 rustfft = "6"
-image = "0.24"
-palette = "0.5"
-rusttype = "0.9"
 
 egui = "0.31"
 eframe = { version = "0.31", default-features = false, features = [
